@@ -1,0 +1,69 @@
+.holographic-scene {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.holographic-scene::before {
+  content: '';
+  position: absolute;
+  inset: 8% -3% -5% 5%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 48% 48%, #7962ed2b 0, #4555b716 40%, transparent 70%);
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.holographic-fallback,
+.holographic-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.holographic-fallback {
+  opacity: 1;
+  transition: opacity .45s ease;
+  overflow: visible;
+}
+
+.holographic-canvas {
+  opacity: 0;
+  transition: opacity .55s ease;
+  pointer-events: none;
+}
+
+.holographic-scene.is-ready .holographic-fallback { opacity: 0; visibility: hidden; transition: none; }
+.holographic-scene.is-ready .holographic-canvas { opacity: 1; transition: none; }
+
+.holographic-star {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 7px #a5a6ff90);
+}
+
+.holographic-star::before,
+.holographic-star::after {
+  content: '';
+  position: absolute;
+  background: linear-gradient(90deg, transparent, #e2ddff, transparent);
+}
+
+.holographic-star::before { top: 5px; width: 11px; height: 1px; }
+.holographic-star::after { left: 5px; width: 1px; height: 11px; background: linear-gradient(transparent, #e2ddff, transparent); }
+.holographic-star-one { top: 15%; left: 19%; opacity: .85; }
+.holographic-star-two { bottom: 20%; right: 14%; transform: scale(.7); opacity: .65; }
+
+@media (prefers-reduced-motion: reduce) {
+  .holographic-fallback,
+  .holographic-canvas { transition: none; }
+}

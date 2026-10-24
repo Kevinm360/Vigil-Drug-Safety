@@ -1,0 +1,32 @@
+.prism-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  overflow: visible;
+  vertical-align: middle;
+  filter: drop-shadow(0 3px 2px rgb(0 7 39 / 40%)) drop-shadow(0 0 7px rgb(142 117 255 / 18%));
+  transition: filter 220ms ease, transform 220ms ease;
+}
+
+.prism-icon__object {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+button:hover .prism-icon,
+a:hover .prism-icon {
+  filter: drop-shadow(0 4px 3px rgb(0 7 39 / 40%)) drop-shadow(0 0 9px rgb(111 208 255 / 35%));
+  transform: translateY(-1px) rotate(-3deg);
+}
+
+button:active .prism-icon,
+a:active .prism-icon {
+  transform: translateY(0) scale(.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prism-icon { transition: none; }
+  button:hover .prism-icon,
+  a:hover .prism-icon,
+  button:active .prism-icon,
+  a:active .prism-icon { transform: none; }
+}

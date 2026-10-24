@@ -1,0 +1,23 @@
+.section-mark.section-atmosphere{inset:0;width:auto;opacity:1;z-index:0;pointer-events:none}
+.section-atmosphere>.section-icon{position:absolute;right:190px;top:16px;width:250px;height:calc(100% - 32px);opacity:.98;overflow:visible;z-index:1}
+.section-atmosphere>.section-accent-lines{position:absolute;inset:0;width:100%;height:100%;opacity:.23;mask-image:linear-gradient(90deg,transparent 44%,#000 76%);z-index:1}
+.section-glyph{transform-box:fill-box;transform-origin:center;animation:section-icon-drift 9s ease-in-out infinite}
+.section-screen-line{animation:section-screen-pulse 6s ease-in-out infinite}
+.section-wave line{transform-box:fill-box;transform-origin:center;animation:section-wave-breathe 7s ease-in-out infinite}
+.section-panel-tint{position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--section-ink) 5%,#f7f8f2) 0%,color-mix(in srgb,var(--section-ink) 12%,#f7f8f2) 62%,color-mix(in srgb,var(--section-ink) 20%,#f7f8f2) 100%);opacity:.8;pointer-events:none;z-index:0}
+.section-bottom-wash{position:absolute;left:0;right:0;bottom:0;height:10px;filter:blur(7px);opacity:.44;background:linear-gradient(90deg,color-mix(in srgb,var(--section-ink) 18%,#f7f8f2),var(--section-ink) 48%,color-mix(in srgb,var(--section-ink) 55%,#f7f8f2));animation:section-wash-drift 12s ease-in-out infinite}
+.section-motion-control{pointer-events:auto;position:absolute;right:18px;bottom:12px;display:flex;align-items:center;gap:5px;border:0;border-radius:16px;background:#f8faf3cc;padding:6px 9px;color:#617157;font-family:Arial,sans-serif;font-size:8px;z-index:2}
+.section-motion-control:hover{background:#f9fbf5}.section-motion-control:focus-visible{outline:2px solid var(--section-ink);outline-offset:3px}
+.section-motion-paused *{animation-play-state:paused!important}
+.nav-item:hover .nav-icon-socket svg{animation:nav-icon-nudge .8s ease-in-out}
+@keyframes section-icon-drift{0%,100%{transform:translateY(-3px) rotate(-2deg)}50%{transform:translateY(4px) rotate(2deg)}}
+@keyframes section-screen-pulse{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes section-wave-breathe{0%,100%{transform:scaleY(.6);opacity:.35}50%{transform:scaleY(1.15);opacity:.9}}
+@keyframes section-wash-drift{0%,100%{transform:translateX(-2%) scaleY(.85)}50%{transform:translateX(2%) scaleY(1.15)}}
+@keyframes nav-icon-nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@media(max-width:1100px){.section-atmosphere>.section-icon{right:150px;width:210px;opacity:.78}}
+@media(max-width:760px){.section-atmosphere>.section-icon{right:80px;top:20px;width:190px;height:calc(100% - 40px);opacity:.58}.section-bottom-wash{height:8px;opacity:.38}.section-atmosphere>.section-accent-lines{opacity:.16}.section-motion-control{right:13px;bottom:10px;font-size:7px;padding:5px 8px}}
+@media(max-width:600px){.section-atmosphere>.section-icon{right:0;top:30px;width:180px;height:calc(100% - 45px);opacity:.38}.section-bottom-wash{left:0;right:0;bottom:0;height:7px;opacity:.34}.section-motion-control{right:11px;bottom:9px}.section-motion-control svg{width:10px;height:10px}}
+@media(prefers-reduced-motion:reduce){.section-atmosphere *,.nav-icon-socket svg{animation:none!important;transition:none!important}.section-motion-control{display:none}}
+
+.section-atmosphere .section-number{fill:color-mix(in srgb,var(--section-ink) 50%,#f7f8f2)}.section-atmosphere .section-caption{fill:color-mix(in srgb,var(--section-ink) 88%,#65715d)}

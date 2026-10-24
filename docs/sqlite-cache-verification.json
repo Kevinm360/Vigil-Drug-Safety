@@ -1,0 +1,8 @@
+{
+  "lookup_prefix": "met",
+  "matching_names": 434,
+  "initial_lookup_ms": 802.4,
+  "after_server_restart_ms": 28.1,
+  "persistent_query_hits_after_restart": 2,
+  "note": "One observed local run; timings vary. Fresh cached names were reused by a new server process."
+}

@@ -1,0 +1,13 @@
+.venv/
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.streamlit/secrets.toml
+secrets.toml
+mlruns/
+*.log
+output/
+artifacts/
+.vigil-runtime/

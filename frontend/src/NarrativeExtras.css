@@ -1,0 +1,37 @@
+.device-narrative-panel{background:radial-gradient(ellipse at 95% 0,#80bfd20b,transparent 70%),linear-gradient(125deg,#b6d8ee06,#acc5d104)}
+.device-source-note{margin-bottom:23px;max-width:1100px}
+.device-fetch-fields{display:grid;grid-template-columns:minmax(220px,1fr) minmax(150px,.38fr) auto;gap:18px;align-items:end}
+.device-fetch-fields .form-field{position:relative;margin-bottom:0;gap:10px;font-size:11px}
+.device-optional{position:absolute;right:0;top:1px;font-size:9px;font-weight:400;color:#748ca5}
+.device-term-input{display:flex;align-items:center;gap:10px;position:relative}
+.device-term-input>svg{position:absolute;left:12px;color:#718ca4;pointer-events:none}
+.device-term-input input{padding-left:37px!important}
+.device-fetch-submit{height:38px;font-size:11px!important;padding:10px 15px!important}
+.device-fetch-dates{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#728aa4;font-size:9px;margin-top:17px;line-height:1.8}
+.device-fetch-dates strong{font-size:10px;font-weight:450;color:#bed1da}
+.device-fetch-dates strong>span{color:#667f95;padding:0 5px}
+.device-fetch-dates>span{padding-left:11px;margin-left:1px;border-left:1px solid var(--border)}
+.device-fetch-status{font-size:11px;line-height:1.8;color:#a1d8c5;min-height:0;margin-top:13px}
+.device-fetch-status:empty{display:none}
+.model-distribution-legend{display:flex;gap:25px;align-items:center;flex-wrap:wrap;margin:3px 0 15px 58px}
+.model-distribution-legend>span{display:flex;align-items:center;gap:7px;font-size:10px;color:#a1b7ca;line-height:1.6}
+.model-distribution-legend i{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.model-distribution-legend strong{font-weight:450;color:#b7cbd9}
+.model-distribution-legend small{color:#7890a7;font-size:9px;margin-left:1px}
+.model-distribution-chart{width:100%;max-width:1100px;margin:0 auto}
+.model-distribution-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.distribution-axis{fill:#849cb3;font-size:10px;font-family:inherit}
+.distribution-axis-title{fill:#9aafc0;font-size:10px;font-family:inherit}
+.distribution-bin{outline:none}
+.distribution-bin rect{transition:fill-opacity .15s,fill .15s}
+.distribution-bin:focus>rect:first-child{stroke:#b7d9d2;stroke-width:1;stroke-opacity:.6;outline:none}
+.distribution-inspection{display:flex;align-items:center;gap:20px;min-height:34px;padding:8px 12px;border-radius:6px;background:#adcce405;border:1px solid #afc9e00b;font-size:10px;color:#839ab1;margin:2px 1px 17px 58px;line-height:1.6}
+.distribution-inspection strong{font-weight:550;color:#d0e5df;font-variant-numeric:tabular-nums}
+.distribution-inspection>span:nth-child(2){color:#93ccd6}
+.distribution-inspection>span:nth-child(3){color:#b9addd}
+.distribution-split{display:flex;gap:8px;align-items:flex-start;color:#839db1;font-size:10px;line-height:1.85;margin-top:15px;border-top:1px solid var(--border);padding-top:15px}
+.distribution-split svg{color:#88b6a8;margin-top:2px}
+.distribution-empty{display:flex;gap:12px;align-items:center;padding:25px 15px;color:#8ea7bb;font-size:11px;line-height:1.8;border:1px dashed #a7c2d51a;border-radius:8px}
+@media(max-width:1050px){.device-fetch-fields{grid-template-columns:minmax(170px,1fr) minmax(140px,.6fr)}.device-fetch-submit{grid-column:1/-1;justify-self:start}.device-fetch-dates>span{width:100%;margin:0;padding:0;border:0}}
+@media(max-width:600px){.device-fetch-fields{grid-template-columns:1fr;gap:17px}.device-fetch-submit{width:100%;justify-self:stretch}.device-source-note p{font-size:10px}.device-fetch-dates{gap:5px 10px}.model-distribution-panel .panel-heading{flex-wrap:wrap;gap:12px}.model-distribution-legend{margin-left:0;gap:10px 20px}.model-distribution-legend>span{font-size:9px}.model-distribution-legend small{font-size:8px}.distribution-inspection{margin-left:0;font-size:9px;gap:12px;flex-wrap:wrap}.distribution-axis{font-size:12px}.distribution-axis-title{font-size:12px}.distribution-split{font-size:9px}.model-distribution-panel>.field-hint{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.distribution-bin rect{transition:none}}
