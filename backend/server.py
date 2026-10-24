@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 import re
 import statistics
+import sqlite3
 import sys
 import threading
 import time
@@ -32,8 +33,10 @@ from urllib.request import Request, urlopen
 
 try:
     from .sqlite_cache import SQLiteResponseCache
+    from .investigations import InvestigationStore, InvestigationError
 except ImportError:  # Direct execution: python backend/server.py
     from sqlite_cache import SQLiteResponseCache
+    from investigations import InvestigationStore, InvestigationError
 
 ROOT = Path(__file__).resolve().parents[1]
 OPENFDA_URL = "https://api.fda.gov/drug/event.json"
@@ -475,6 +478,7 @@ class DashboardService:
     def __init__(self, root=ROOT, client=None):
         self.root = Path(root)
         self.response_cache = SQLiteResponseCache(self.root / ".vigil-runtime" / "fda-cache.sqlite3")
+        self.investigations = InvestigationStore(self.root / ".vigil-workspace" / "investigations.sqlite3", validate_params)
         self.client = client or OpenFDAClient(cache_store=self.response_cache)
         self.device_client = OpenFDAClient(base_url="https://api.fda.gov/device/event.json", cache_store=self.response_cache)
         self.drug_client = OpenFDAClient(base_url="https://api.fda.gov/drug/ndc.json", cache_store=self.response_cache, cache_ttl=86400)
@@ -520,6 +524,26 @@ class DashboardService:
     def review_path(self):
         paths = [self.root / "data" / "bronze" / "reviews.csv", self.root / "data" / "reviews.csv", self.root / "reviews.csv"]
         return next((path for path in paths if path.is_file()), None)
+
+    def reaction_reports(self, raw_params):
+        params = validate_params(raw_params, self.defaults())
+        reaction = raw_params.get("reaction", "")
+        if not isinstance(reaction, str) or not reaction.strip() or len(reaction) > 200 or any(ord(c) < 32 for c in reaction):
+            raise APIError("Choose a reaction term of 200 characters or fewer.")
+        reaction = reaction.strip().upper()
+        if params["mode"] == "reference":
+            records = self.dashboard(params)["narratives"]["records"]
+            matched = [row for row in records if reaction in {str(term).upper() for term in row.get("reaction_terms", [])}]
+            return {"records": matched, "total": len(matched), "reaction": reaction, "notice": "Synthetic archive records matching the exact extracted reaction term. These are not FAERS case reports."}
+        # Quote the complete term; saved focus is text, never an FDA query fragment.
+        escaped = reaction.replace('\\', '\\\\').replace('"', '\\"')
+        query = search_query(params, flag=f'patient.reaction.reactionmeddrapt.exact:"{escaped}"')
+        total = self.client.count(query)
+        sample = self.fetch_report_sample(query, 20, "receivedate:desc", page_size=20,
+            transform=lambda report: flatten_report(report, params["drug"])) if total else {"records": [], "skipped_oversized": 0}
+        return {"records": sample["records"], "total": total, "reaction": reaction,
+                "skipped_oversized": sample["skipped_oversized"],
+                "notice": "Latest matching FDA report sample, up to 20 reports. The reaction filter applies to this sample query; cohort charts and signal denominators remain unchanged."}
 
     def reviews(self):
         path = self.review_path()
@@ -613,7 +637,7 @@ class DashboardService:
         result["graph"] = graph_result(graph_drugs, result["signals"])
         result["severity"]["notice"] = "The supplied synthetic reviews contain neither seriousness labels nor patient demographics. These charts populate from real FAERS records in Live mode."
         result["reports_notice"] = "FAERS report samples are available in Live mode. The local archive contains synthetic reviews shown in Narratives."
-        records = [{"id": row.get("review_id"), "date": row["created_at"][:10], "drug": canonical_drug(row.get("drug")), "text": row["review_text"], "rating": int(row.get("rating") or 0), "source": "synthetic review"} for row in selected]
+        records = [{"id": row.get("review_id"), "date": row["created_at"][:10], "drug": canonical_drug(row.get("drug")), "reaction_terms": sorted(reaction_mentions(row["review_text"])), "text": row["review_text"], "rating": int(row.get("rating") or 0), "source": "synthetic review"} for row in selected]
         result["narratives"] = narratives_result(records, "Synthetic review text from the supplied local archive, not FAERS case narratives.")
         return self.finish(result)
 
@@ -908,6 +932,7 @@ def flatten_report(report, drug_name):
             "drug_name": subject.get("medicinalproduct", drug_name),
             "drugs": [row.get("medicinalproduct", "") for row in drugs],
             "reactions": ", ".join(row.get("reactionmeddrapt", "") for row in patient.get("reaction", []) if isinstance(row, dict)),
+            "reaction_terms": [str(row["reactionmeddrapt"]) for row in patient.get("reaction", []) if isinstance(row, dict) and row.get("reactionmeddrapt")],
             "sex": {v: k for k, v in SEX_CODES.items()}.get(str(patient.get("patientsex")), "Not recorded"),
             "age": age_in_years(patient.get("patientonsetage"), patient.get("patientonsetageunit")),
             "serious": str(report.get("serious")) == "1" if str(report.get("serious")) in {"1", "2"} else None,
@@ -1036,6 +1061,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 return self.send_json(self.service.dashboard(params))
             if parsed.path == "/api/drugs":
                 return self.send_json(self.service.drug_names(params))
+            if parsed.path == "/api/reaction-reports":
+                return self.send_json(self.service.reaction_reports(params))
+            if parsed.path == "/api/investigations":
+                return self.investigation_response(lambda: self.service.investigations.get(params["id"]) if params.get("id") else {"investigations": self.service.investigations.list()})
             if parsed.path == "/api/export":
                 kind = params.pop("kind", "reactions")
                 if kind not in {"reactions", "timeseries", "signals", "reports"}:
@@ -1064,6 +1093,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             traceback.print_exc()
             self.send_json({"error": "The local server could not complete this request. Review the server console for details.", "status": "error"}, 500)
 
+    def investigation_response(self, action):
+        try:
+            return self.send_json(action())
+        except InvestigationError as exc:
+            raise APIError(str(exc), exc.status) from None
+        except (sqlite3.Error, OSError):
+            raise APIError("The local investigation library is unavailable. Your current workspace is still open; try again before leaving it.", 503) from None
+
     def do_POST(self):
         try:
             self.allowed()
@@ -1077,6 +1114,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 raise APIError("Request body must be a JSON object.")
             route = urlsplit(self.path).path
+            if route == "/api/investigations/save":
+                return self.investigation_response(lambda: self.service.investigations.save(body))
+            if route == "/api/investigations/delete":
+                def remove():
+                    self.service.investigations.delete(body.get("id"), body.get("revision"))
+                    return {"deleted": True}
+                return self.investigation_response(remove)
             if route == "/api/model/train":
                 return self.send_json(self.service.train(body))
             if route == "/api/narratives/fetch":

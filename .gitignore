@@ -11,3 +11,4 @@ mlruns/
 output/
 artifacts/
 .vigil-runtime/
+.vigil-workspace/
