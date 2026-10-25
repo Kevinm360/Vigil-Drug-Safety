@@ -9,6 +9,8 @@ from __future__ import annotations
 import argparse
 import ast
 import copy
+import hashlib
+from contextvars import copy_context
 import csv
 import datetime as dt
 import io
@@ -32,10 +34,12 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 try:
+    from . import freshness
     from .sqlite_cache import SQLiteResponseCache
     from .investigations import InvestigationStore, InvestigationError
     from .period_changes import change_row, validate_periods
 except ImportError:  # Direct execution: python backend/server.py
+    import freshness
     from sqlite_cache import SQLiteResponseCache
     from investigations import InvestigationStore, InvestigationError
     from period_changes import change_row, validate_periods
@@ -198,7 +202,7 @@ class OpenFDAClient:
         self.cache_store = cache_store
         self.cache_ttl = cache_ttl
 
-    def _remember(self, cache_key, data, size, ttl):
+    def _remember(self, cache_key, data, size, ttl, retrieved_at=None):
         if size > 1_000_000 or ttl <= 0:
             return
         with self.lock:
@@ -208,7 +212,7 @@ class OpenFDAClient:
             while self.cache and (len(self.cache) >= 400 or self.cache_bytes + size > 8_000_000):
                 removed = self.cache.pop(next(iter(self.cache)))
                 self.cache_bytes -= removed[2]
-            self.cache[cache_key] = (time.monotonic() + ttl, copy.deepcopy(data), size)
+            self.cache[cache_key] = (time.monotonic() + ttl, copy.deepcopy(data), size, retrieved_at if retrieved_at is not None else time.time())
             self.cache_bytes += size
 
     def request(self, params, *, totals_only=False):
@@ -216,13 +220,15 @@ class OpenFDAClient:
         with self.lock:
             cached = self.cache.get(cache_key)
             if cached and cached[0] > time.monotonic():
+                freshness.record("memory", cached[3], time.time() + cached[0] - time.monotonic())
                 return copy.deepcopy(cached[1])
         # Raw case reports and narrative text stay out of persistent storage.
         disk_key = self.cache_store.key(self.base_url, params, totals_only) if self.cache_store and (totals_only or "count" in params) else None
         if disk_key:
             saved = self.cache_store.get(disk_key)
             if saved is not None:
-                self._remember(cache_key, saved.value, len(json.dumps(saved.value).encode()), saved.expires_at - time.time())
+                self._remember(cache_key, saved.value, len(json.dumps(saved.value).encode()), saved.expires_at - time.time(), saved.created_at)
+                freshness.record("sqlite", saved.created_at, saved.expires_at)
                 return saved.value
         payload = dict(params)
         key = api_key()
@@ -246,9 +252,11 @@ class OpenFDAClient:
                 # Keep small aggregates hot, without retaining hundreds of MB
                 # of raw report drug lists after a training run.
                 size = len(json.dumps(data, ensure_ascii=False).encode())
-                self._remember(cache_key, data, size, self.cache_ttl)
+                fetched_at = time.time()
+                self._remember(cache_key, data, size, self.cache_ttl, fetched_at)
+                freshness.record("network", fetched_at, fetched_at + self.cache_ttl)
                 if disk_key:
-                    self.cache_store.put(disk_key, data, self.cache_ttl)
+                    self.cache_store.put(disk_key, data, self.cache_ttl, created_at=fetched_at)
                 return data
             except HTTPError as exc:
                 try:
@@ -260,9 +268,11 @@ class OpenFDAClient:
                     message = detail.get("message", "") if isinstance(detail, dict) else ""
                     if "no matches" in str(message).lower():
                         empty = {"results": [], "meta": {"results": {"total": 0}}}
-                        self._remember(cache_key, empty, 64, self.cache_ttl)
+                        fetched_at = time.time()
+                        self._remember(cache_key, empty, 64, self.cache_ttl, fetched_at)
+                        freshness.record("network", fetched_at, fetched_at + self.cache_ttl)
                         if disk_key:
-                            self.cache_store.put(disk_key, empty, self.cache_ttl)
+                            self.cache_store.put(disk_key, empty, self.cache_ttl, created_at=fetched_at)
                         return empty
                 if exc.code in {429, 500, 502, 503, 504} and not attempt:
                     time.sleep(0.6)
@@ -527,6 +537,7 @@ class DashboardService:
         paths = [self.root / "data" / "bronze" / "reviews.csv", self.root / "data" / "reviews.csv", self.root / "reviews.csv"]
         return next((path for path in paths if path.is_file()), None)
 
+    @freshness.tracked
     def reaction_reports(self, raw_params):
         params = validate_params(raw_params, self.defaults())
         reaction = raw_params.get("reaction", "")
@@ -547,6 +558,7 @@ class DashboardService:
                 "skipped_oversized": sample["skipped_oversized"],
                 "notice": "Latest matching FDA report sample, up to 20 reports. The reaction filter applies to this sample query; cohort charts and signal denominators remain unchanged."}
 
+    @freshness.tracked
     def period_changes(self, raw_params):
         current = validate_params(raw_params, self.defaults())
         try:
@@ -578,7 +590,7 @@ class DashboardService:
             return {"total": total, "counts": counts, "complete": len(rows) < 1000}
 
         with ThreadPoolExecutor(max_workers=2) as pool:
-            jobs = [pool.submit(collect, params) for params in (baseline, current)]
+            jobs = [pool.submit(copy_context().run, collect, params) for params in (baseline, current)]
             before, after = [job.result() for job in jobs]
         candidates = sorted(set(term for group in (before, after) for term, _ in Counter(group["counts"]).most_common(50)))
         warnings = []
@@ -588,7 +600,7 @@ class DashboardService:
             escaped = term.replace('\\', '\\\\').replace('"', '\\"')
             return self.client.count(search_query(params, flag=f'patient.reaction.reactionmeddrapt.exact:"{escaped}"'))
         with ThreadPoolExecutor(max_workers=4) as pool:
-            jobs = {pool.submit(exact_count, params, term): (group, term) for group, params, term in missing}
+            jobs = {pool.submit(copy_context().run, exact_count, params, term): (group, term) for group, params, term in missing}
             for job in as_completed(jobs):
                 group, term = jobs[job]
                 try:
@@ -649,6 +661,41 @@ class DashboardService:
             result["meta"]["status"] = "empty"
         return result
 
+    def dashboard_section(self, raw_params):
+        section = raw_params.get("section", "core")
+        if section not in {"core", "signals", "reports", "severity", "comparison"}:
+            raise APIError("Choose a valid dashboard section.")
+        params = validate_params(raw_params, self.defaults())
+        with freshness.capture() as trace:
+            result = self.dashboard(params) if params["mode"] == "reference" else self.live(params, section)
+        meta = result["meta"]
+        basis = meta.get("basis") or hashlib.sha256(json.dumps([result["summary"]["total_reports"], result["reactions"]], sort_keys=True).encode()).hexdigest()
+        provenance = ({"source": "local", "retrieved_at": meta["generated_at"], "cached": bool(meta.get("cached"))}
+                      if params["mode"] == "reference" else freshness.describe(trace))
+        failures = meta.get("failures", {})
+        if section == "core":
+            patch = result
+            # Counts of screening flags are unknown until the signal section loads.
+            if params["mode"] == "live":
+                patch["summary"]["signal_count"] = None
+        elif section == "signals":
+            patch = {"signals": result["signals"], "summary": {"signal_count": result["summary"]["signal_count"]}}
+        elif section == "severity":
+            patch = {"severity": result["severity"], "summary": {"serious_reports": result["summary"]["serious_reports"]}}
+        elif section == "reports":
+            patch = {"reports": result["reports"], "reports_notice": result.get("reports_notice", "")}
+        else:
+            patch = {"comparison_reactions": result["reactions"], "comparison_graph": result["graph"],
+                     "comparison_timeseries": result["timeseries"], "summary": {"compare_total": result["summary"]["compare_total"]},
+                     "comparison": meta["comparison"]}
+        fatal = bool(failures) and (section in {"signals", "reports"} or
+                    section == "comparison" and meta["comparison"]["status"] == "unavailable")
+        return {"section": section, "cohort": params, "basis": basis, "data": patch,
+                "generated_at": utc_now(), "freshness": provenance,
+                "status": "error" if fatal else "partial" if failures else "ready",
+                "errors": list(failures.values()), "warnings": meta["warnings"]}
+
+    @freshness.tracked
     def dashboard(self, raw_params):
         params = validate_params(raw_params, self.defaults())
         key = json.dumps(params, sort_keys=True)
@@ -704,7 +751,7 @@ class DashboardService:
         result["narratives"] = narratives_result(records, "Synthetic review text from the supplied local archive, not FAERS case narratives.")
         return self.finish(result)
 
-    def live(self, params):
+    def live(self, params, section=None):
         result = self.base(params)
         query, background_query = search_query(params), search_query(params, drug=False)
         # Core queries fail together. A network outage is never presented as a
@@ -712,10 +759,13 @@ class DashboardService:
         core = {"total": lambda: self.client.count(query),
                 "timeseries": lambda: self.daily_counts(params),
                 "reactions": lambda: self.client.aggregate(query, "patient.reaction.reactionmeddrapt.exact", 50)}
+        if section and section != "core":
+            core.pop("timeseries")
         core_values = self.parallel(core, result, required=True)
+        result["meta"]["basis"] = hashlib.sha256(json.dumps([core_values["total"], core_values["reactions"]], sort_keys=True).encode()).hexdigest()
         result["summary"]["total_reports"] = core_values["total"]
         result["reactions"] = [{"reaction": row["term"], "reports": int(row["count"]), "compare_reports": None} for row in core_values["reactions"]]
-        daily = [{"date": date_value(row["time"], "receivedate").isoformat(), "count": row["count"]} for row in core_values["timeseries"]]
+        daily = [{"date": date_value(row["time"], "receivedate").isoformat(), "count": row["count"]} for row in core_values.get("timeseries", [])]
         facets = {} if not core_values["total"] else {
             "background_total": lambda: self.client.count(background_query),
             "background_reactions": lambda: self.client.aggregate(background_query, "patient.reaction.reactionmeddrapt.exact"),
@@ -737,6 +787,11 @@ class DashboardService:
             facets["compare_series"] = lambda: self.daily_counts(other_params)
             facets["compare_rx"] = lambda: self.client.aggregate(other_query, "patient.reaction.reactionmeddrapt.exact", 1000)
             facets["compare_total"] = lambda: self.client.count(other_query)
+        if section:
+            groups = {"core": set(), "signals": {"background_total", "background_reactions"},
+                      "reports": {"reports"}, "comparison": {"compare_series", "compare_rx", "compare_total"},
+                      "severity": {"background_total", "background_reactions", "serious", "sex", "age", "reporters", "serious_rx", "background_serious_rx", *["outcome:" + label for label in OUTCOMES]}}
+            facets = {key: task for key, task in facets.items() if key in groups[section]}
         values = self.parallel(facets, result)
         result["filters"]["drugs"] = sorted(set([params["drug"], params["compare"], "METFORMIN", "IBUPROFEN", "ACETAMINOPHEN", "SEMAGLUTIDE", "ATORVASTATIN"]) - {""})
         if params["compare"]:
@@ -890,7 +945,7 @@ class DashboardService:
     def parallel(functions, result, required=False):
         values = {}
         with ThreadPoolExecutor(max_workers=3) as pool:
-            futures = {pool.submit(function): key for key, function in functions.items()}
+            futures = {pool.submit(copy_context().run, function): key for key, function in functions.items()}
             for future in as_completed(futures):
                 key = futures[future]
                 try:
@@ -898,6 +953,7 @@ class DashboardService:
                 except APIError as exc:
                     if required:
                         raise
+                    result["meta"].setdefault("failures", {})[key] = str(exc)
                     result["meta"]["warnings"].append(f"{key.replace('_', ' ')} unavailable: {exc}")
         return values
 
@@ -1122,6 +1178,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                                        "api_key_configured": bool(api_key()), "generated_at": utc_now(), "cache": self.service.response_cache.stats()})
             if parsed.path == "/api/dashboard":
                 return self.send_json(self.service.dashboard(params))
+            if parsed.path == "/api/dashboard/section":
+                return self.send_json(self.service.dashboard_section(params))
             if parsed.path == "/api/drugs":
                 return self.send_json(self.service.drug_names(params))
             if parsed.path == "/api/reaction-reports":

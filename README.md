@@ -90,7 +90,7 @@ npm test
 
 The regression suite checks query/cohort consistency, time aggregation, signal calculations and intervals, NLP negation, provenance, API validation, score alignment, held-out splitting, and alert filtering. Live smoke checks require network access and the configured openFDA key.
 
-Verified during implementation: production build; 83 Python regression tests and 23 frontend state/export/network/navigation/evidence tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
+Verified during implementation: production build; 91 Python regression tests and 29 frontend state/export/network/navigation/evidence/recovery tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
 
 Comparison requests expose availability for volume, reactions, and totals separately. An unavailable value remains unknown instead of appearing as zero; a successful empty response remains a genuine zero. Comparison data can still load when the subject drug has no matching reports. Narrative tables and exports retain every analyzed record within the accepted upload limit.
 
@@ -98,6 +98,16 @@ Repeat a live check with `.\.venv\Scripts\python.exe tests/smoke_live.py --train
 
 The original Prefect/MLflow workflow is retained separately. Install `requirements-pipeline.txt` to run `run_pipeline.py`. Scheduling and notifications have not been activated by the redesign.
 
+
+## Loading, recovery, and freshness
+
+Core cohort counts/reactions load first. Signal estimates, severity/demographics, the case-report sample, and optional drug comparison then load independently. Each section exposes its own loading state and Refresh/Retry control. Retrying one section leaves the other sections in place. The expandable data-status row shows retrieval times and whether FDA responses were fetched, reused from cache, or mixed. It reports the oldest underlying response and earliest cache expiry, rather than treating dashboard assembly as a new FDA retrieval. Refresh can reuse eligible unexpired responses; it does not force a cache bypass. Expired entries are never used for a new request.
+
+During a refresh of the same cohort, the last successful result remains visible. A failed attempt clearly labels that retained result and offers Retry. Switching cohorts clears the old evidence immediately. Generation/attempt checks and cancellation prevent late successes or errors from another cohort or older retry from replacing the current result. Section responses include a digest of the subject counts used in their calculations; a mismatch requires a full cohort refresh instead of mixing denominators. Partial sections retain available data and identify missing requests. Genuine zeros remain distinct from unavailable values.
+
+Reaction focus, chart modes, table/search controls, uploaded text, model outputs, notes, and unapplied filter edits survive same-cohort section refreshes. Network search no longer resets when an unrelated response updates. Period comparisons have a local retry and retain their last result for the same date windows. The evidence drawer keeps its existing matching-record retry and now shows signal-section status and report retrieval details. Dashboard CSV exports include available retrieval time and request status. Existing visualizations and all original workflows remain available.
+
+`GET /api/dashboard/section?section=core|signals|severity|reports|comparison` supplements the existing full `/api/dashboard` endpoint. The original full API/export routes remain supported. Cache provenance is request-local across worker threads and retains the original timestamp through memory and SQLite reuse. No credentials, raw case text, or uploaded narratives are added to persistent caching. No external service or new dependency is introduced.
 
 ## SQLite cache
 

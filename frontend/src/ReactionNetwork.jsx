@@ -10,7 +10,7 @@ const flagged=n=>n.signal===true||n.signal===1||n.signal==='true';
 export default function ReactionNetwork({data,drug='Selected drug',recordLabel='Reports',compact=false,selectedReaction,onReactionChange}){
   const graph=useMemo(()=>relationshipData(data,drug),[data,drug]);
   const [query,setQuery]=useState(''),[limit,setLimit]=useState(compact?6:12),[mode,setMode]=useState(compact?'matrix':'map'),[localSelected,setSelected]=useState(null),[sort,setSort]=useState('volume'),[focusSource,setFocusSource]=useState('all');
-  useEffect(()=>{setSelected(null);setQuery('');setFocusSource('all');},[data,drug]);
+  useEffect(()=>{setSelected(null);setQuery('');setFocusSource('all');},[drug]);
   const selected=selectedReaction!==undefined?(graph.reactions.find(n=>n.label.toUpperCase()===selectedReaction.toUpperCase())?.id??null):localSelected;
   const primary=graph.sources[0];
   const total=n=>graph.sources.reduce((sum,s)=>sum+connectionCount(graph,s.id,n.id),0);
