@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useRef,useState,useImperativeHandle} from 'react';
 import {Bookmark,FolderOpen,Save,X,Trash2,ArrowRight,LoaderCircle} from 'lucide-react';
 import {snapshotKey} from './investigationState.js';
 import './investigations.css';
@@ -12,7 +12,7 @@ async function api(path,body){
 const VIEW_LABELS={overview:'Overview',reactions:'Reactions',reports:'Case reports',signals:'Signal explorer',severity:'Severity',network:'Network graph',narratives:'Narrative lab',models:'Model studio',changes:'What changed?'};
 const date=value=>new Date(value).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
 
-export default function InvestigationWorkspace({cohort,view,reaction,periods={},retrievedAt,pending,onLoad}){
+export default function InvestigationWorkspace({cohort,view,reaction,periods={},retrievedAt,pending,onLoad,actionsRef,onActiveChange}){
   const [active,setActive]=useState(null),[mode,setMode]=useState(''),[library,setLibrary]=useState([]),[search,setSearch]=useState('');
   const [name,setName]=useState(''),[notes,setNotes]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[remove,setRemove]=useState('');
   const dialog=useRef(null),opener=useRef(null),generation=useRef(0),busyRef=useRef(false);
@@ -21,11 +21,13 @@ export default function InvestigationWorkspace({cohort,view,reaction,periods={},
   const changed=active&&snapshotKey(active)!==snapshotKey(current);
   useEffect(()=>{if(!mode)return;opener.current=document.activeElement;const node=dialog.current;const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';node.querySelector('input')?.focus();
     const key=e=>{if(e.key==='Escape'&&!busyRef.current){e.preventDefault();setMode('')}if(e.key==='Tab'){const controls=[...node.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea:not(:disabled)')];const first=controls[0],last=controls.at(-1);if(e.shiftKey&&(document.activeElement===first||!node.contains(document.activeElement))){e.preventDefault();last?.focus()}else if(!e.shiftKey&&(document.activeElement===last||!node.contains(document.activeElement))){e.preventDefault();first?.focus()}}};
-    node.addEventListener('keydown',key);return()=>{node.removeEventListener('keydown',key);document.body.style.overflow=previousOverflow;opener.current?.focus()};
+    node.addEventListener('keydown',key);return()=>{node.removeEventListener('keydown',key);document.body.style.overflow=previousOverflow;(opener.current?.isConnected?opener.current:document.getElementById('evidence-trigger')||document.getElementById('main'))?.focus()};
   },[mode]);
   async function refreshLibrary(){const result=await api('/api/investigations');setLibrary(result.investigations)}
   async function showLibrary(){setMode('library');setError('');setRemove('');setSearch('');setBusy(true);try{await refreshLibrary()}catch(e){setError(e.message)}finally{setBusy(false)}}
   function showSave(){setName(active?.name||`${cohort.drug}${reaction?' · '+reaction:''}`);setNotes(active?.notes||'');setError('');setNotice('');setMode('save')}
+  useImperativeHandle(actionsRef,()=>({showSave}));
+  useEffect(()=>{onActiveChange?.(active)},[active,onActiveChange]);
   async function save(asNew=false){setBusy(true);setError('');const payload={...current,name,notes,retrieved_at:retrievedAt||''};if(active&&!asNew){payload.id=active.id;payload.revision=active.revision}
     try{const result=await api('/api/investigations/save',payload);setActive(result);setNotice(`Saved ${result.name}`);setMode('')}catch(e){setError(e.message)}finally{setBusy(false)}}
   async function open(item){setBusy(true);setError('');const token=++generation.current;try{const result=await api('/api/investigations?id='+item.id);if(token!==generation.current)return;setActive(result);onLoad(result);setNotice(`Opened ${result.name}. Data reloads using the saved cohort.`);setMode('')}catch(e){setError(e.message)}finally{setBusy(false)}}

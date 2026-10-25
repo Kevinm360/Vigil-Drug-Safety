@@ -90,7 +90,7 @@ npm test
 
 The regression suite checks query/cohort consistency, time aggregation, signal calculations and intervals, NLP negation, provenance, API validation, score alignment, held-out splitting, and alert filtering. Live smoke checks require network access and the configured openFDA key.
 
-Verified during implementation: production build; 83 Python regression tests and 18 frontend state/export/network/navigation tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
+Verified during implementation: production build; 83 Python regression tests and 23 frontend state/export/network/navigation/evidence tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
 
 Comparison requests expose availability for volume, reactions, and totals separately. An unavailable value remains unknown instead of appearing as zero; a successful empty response remains a genuine zero. Comparison data can still load when the subject drug has no matching reports. Narrative tables and exports retain every analyzed record within the accepted upload limit.
 
@@ -116,6 +116,14 @@ Click a reaction bar, treemap tile, signal point, reaction table link, or networ
 
 Local API: `GET /api/investigations`, `GET /api/investigations?id=...`, `POST /api/investigations/save`, `POST /api/investigations/delete`, and `GET /api/reaction-reports?...&reaction=...`. These use the same local-host/origin and JSON validation as the existing API. No new dependency or database service is needed.
 
+
+## Reaction evidence drawer
+
+Select a reaction in a bar chart, treemap, signal plot, seriousness plot, period-comparison chart, reaction table, or network to open its evidence drawer. **Open evidence** reopens it for the current reaction focus. Closing the drawer keeps the selection, chart controls, and connected shortcuts. On wide screens the drawer sits beside the chart; on smaller screens it overlays the workspace, with Escape, focus containment, focus return, and a close button. Interactive chart tooltips remain available, and Enter/Space selects a reaction.
+
+The drawer combines subject report counts, reporting share, PRR/ROR with 95% intervals, screening-rule status, the current applied cohort and retrieval time, and the exact-reaction report sample. It reuses `/api/reaction-reports` and the existing Case reports request state; changing reactions cancels the previous request and results are keyed to the cohort and full reaction term. Failed requests have a local retry; unknown counts and unavailable statistics remain unknown. The sample shows up to five records in the drawer, with access to the complete retrieved sample in Case reports and a CSV export. Live samples remain bounded to 20 reports. Synthetic records are explicitly identified.
+
+Saved investigation notes appear with their investigation name. **Edit investigation notes** or **Save investigation & notes** opens the existing save form; it retains name/notes, revision protection, Save as new, and all existing fields. Nothing is saved automatically. Notes belong to the investigation, and saving updates its current cohort, view, reaction focus, and baseline. No new database or external service is introduced.
 
 ## What changed? Period comparisons
 
