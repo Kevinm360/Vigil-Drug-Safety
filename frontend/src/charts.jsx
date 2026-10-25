@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import './charts.css';
 import ReactionNetwork from './ReactionNetwork.jsx';
+import {cubeProjection} from './signalProjection.js';
+import {SignalAxes,SignalAxisGuide} from './SignalAxes.jsx';
 
 const PALETTE = ['#477f79', '#8773a5', '#b77d59', '#6e8ba6', '#8a9a64', '#c2a675', '#9c839a'];
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -166,7 +168,7 @@ export function SignalPlot({ onSelect, selectedReaction='', data, recordLabel = 
   const drag = useRef(null);
   const rows = list(data).filter((row) => finite(row.prr) && number(row.prr) > 0).map((row) => ({ ...row, volume: number(row.a ?? row.count ?? row.reports), logPRR: Math.log2(number(row.prr)), significance: finite(row.p_value ?? row.p) ? -Math.log10(Math.max(Number.MIN_VALUE, number(row.p_value ?? row.p))) : logPFromChiSquare(row.chi2) }));
   if (!rows.length) return <EmptyChart message="No disproportionality results are available yet." />;
-  const W = Math.max(320, tooltip.width), H = 365, L = 66, R = 25, T = 20, B = 58;
+  const W = Math.max(320, tooltip.width), H = mode==='cube'?(W<500?360:440):365, L = 66, R = 25, T = 20, B = 58;
   const volumeMax = Math.max(3, ...rows.map((row) => row.volume)) * 1.1;
   const prrMax = Math.max(3, ...rows.map((row) => number(row.prr))) * 1.1;
   const logMin = Math.min(-1, ...rows.map((row) => row.logPRR)) - .3;
@@ -179,16 +181,12 @@ export function SignalPlot({ onSelect, selectedReaction='', data, recordLabel = 
   const xTicks = Array.from({ length: 6 }, (_, index) => ({ value: xMin + (xMax - xMin) * index / 5, label: fmt(xMin + (xMax - xMin) * index / 5, mode === 'volume' && volumeMax >= 10 ? 0 : 1) }));
   const yTicks = Array.from({ length: 5 }, (_, index) => ({ value: yMax * index / 4, label: fmt(yMax * index / 4, 1) }));
   const xThreshold = mode === 'volume' ? 3 : 1, yThreshold = mode === 'volume' ? 2 : logPFromChiSquare(4);
-  const projected = (vx, vy, vz) => {
-    const scale = Math.min(1, (W - 55) / 550);
-    const ax = (vx - .5) * 400 * scale, ay = (vy - .5) * 260, az = (vz - .5) * 260 * scale;
-    return [W / 2 + Math.cos(angle) * ax + Math.sin(angle) * az, H / 2 + ay * -.78 + (Math.sin(angle) * ax - Math.cos(angle) * az) * .38];
-  };
-  const cubeCorners = Array.from({ length: 8 }, (_, index) => projected(index & 1 ? 1 : 0, index & 2 ? 1 : 0, index & 4 ? 1 : 0));
+  const {project:projected,corners:cubeCorners}=cubeProjection(angle,W,H);
   const cubeEdges = [[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
   const zMax = Math.max(1, ...rows.map((row) => Math.log10(row.volume + 1)));
   return <div ref={tooltip.ref} className="chart-shell signal-chart">
-    <div className="chart-controls"><div className="chart-segmented" aria-label="Signal visualization">{[['volume', 'Co-occurrences'], ['volcano', 'Volcano'], ['cube', '3D signals']].map(([value, text]) => <button key={value} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => { setMode(value); tooltip.hide(); }}>{text}</button>)}</div>{mode === 'cube' && <button className="chart-text-button" onClick={() => setAngle((value) => value + Math.PI / 6)} aria-label="Rotate 3D signals by 30 degrees">Rotate ↻</button>}</div>
+    <div className="chart-controls"><div className="chart-segmented" aria-label="Signal visualization">{[['volume', 'Co-occurrences'], ['volcano', 'Volcano'], ['cube', '3D signals']].map(([value, text]) => <button key={value} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => { setMode(value); tooltip.hide(); }}>{text}</button>)}</div>{mode === 'cube' && <div className="cube-buttons"><button className="chart-text-button" onClick={() => {setAngle(-.58);tooltip.hide()}} aria-label="Reset 3D signal view">Reset view</button><button className="chart-text-button" onClick={() => setAngle((value) => value + Math.PI / 6)} aria-label="Rotate 3D signals by 30 degrees">Rotate ↻</button></div>}</div>
+    {mode==='cube'&&<SignalAxisGuide recordLabel={recordLabel} angle={angle}/>}
     <svg className={`chart-svg ${mode === 'cube' ? 'chart-svg-rotatable' : ''}`} viewBox={`0 0 ${W} ${H}`} role={onSelect?'group':'img'} aria-label={mode === 'volume' ? `Scatter plot of ${recordLabel.toLowerCase()} with drug–reaction co-occurrences against proportional reporting ratios` : mode === 'volcano' ? 'Volcano plot of log base 2 proportional reporting ratios against negative log base 10 p-values' : `Rotatable three dimensional projection of reporting ratio, significance, and ${recordLabel.toLowerCase()} volume`} onPointerDown={(event) => { if (mode === 'cube' && !(onSelect && event.target.closest('.chart-point'))) { drag.current = { x: event.clientX, angle }; event.currentTarget.setPointerCapture(event.pointerId); } }} onPointerMove={(event) => { if (drag.current && mode === 'cube') setAngle(drag.current.angle + (event.clientX - drag.current.x) * .008); }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
       <title>{mode === 'cube' ? 'Drag horizontally or use Rotate to turn the projected cube.' : 'Focus a reaction point to inspect its signal statistics.'}</title>
       {mode !== 'cube' ? <>
@@ -198,10 +196,11 @@ export function SignalPlot({ onSelect, selectedReaction='', data, recordLabel = 
         <line x1={L} x2={W - R} y1={y(yThreshold)} y2={y(yThreshold)} stroke={PALETTE[1]} strokeOpacity=".4" strokeDasharray="5 5" />
         {rows.map((row, index) => <circle key={`${row.reaction}-${index}`} cx={x(mode === 'volume' ? row.volume : row.logPRR)} cy={y(mode === 'volume' ? number(row.prr) : row.significance)} r={flagged(row) ? 5.5 : 4} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity={flagged(row) ? '.85' : '.55'} stroke={flagged(row) ? '#8773a5' : '#477f79'} strokeWidth=".8" className="chart-point" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}${flagged(row) ? ', meets screening rule' : ''}`} {...tooltip.bind(label(row.reaction), chartRows(row, recordLabel), flagged(row) ? PALETTE[1] : PALETTE[0])} />)}
       </> : <>
-        {cubeEdges.map(([a, b], index) => <line key={index} x1={cubeCorners[a][0]} y1={cubeCorners[a][1]} x2={cubeCorners[b][0]} y2={cubeCorners[b][1]} stroke="#8ea7bf" strokeOpacity=".22" strokeDasharray={index < 3 ? undefined : '3 5'} />)}
-        {[0,.25,.5,.75,1].map((level) => { const p1 = projected(0,0,level), p2 = projected(1,0,level), p3 = projected(1,1,level); return <path key={level} d={`M${p1}L${p2}L${p3}`} fill="none" stroke="#6d87a2" strokeOpacity=".12" />; })}
-        {rows.map((row, index) => { const p = projected((row.logPRR - logMin) / (logMax - logMin), row.significance / sigMax, Math.log10(row.volume + 1) / zMax); return <circle key={`${row.reaction}-${index}`} cx={p[0]} cy={p[1]} r={3.5 + Math.log10(row.volume + 1)} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity=".8" stroke={flagged(row) ? '#8773a5' : '#477f79'} strokeWidth=".7" className="chart-point" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}, chi-square ${fmt(row.chi2, 2)}`} {...tooltip.bind(label(row.reaction), chartRows(row, recordLabel), flagged(row) ? PALETTE[1] : PALETTE[0])} />; })}
-        <text x={W / 2} y={H - 10} textAnchor="middle" className="chart-cube-label">{W < 500 ? 'X · log₂(PRR)  Y · −log₁₀(p)  Z · log₁₀(a+1)' : `X · log₂(PRR)　 Y · −log₁₀(p)　 Z · log₁₀(${recordLabel.toLowerCase()} + 1)`}</text>
+        {cubeEdges.map(([a, b], index) => <line key={index} x1={cubeCorners[a][0]} y1={cubeCorners[a][1]} x2={cubeCorners[b][0]} y2={cubeCorners[b][1]} stroke="#8d9c80" strokeOpacity=".34" strokeDasharray={index < 3 ? undefined : '3 5'} />)}
+        {[0,.25,.5,.75,1].map((level) => { const p1 = projected(0,0,level), p2 = projected(1,0,level), p3 = projected(1,1,level); return <path key={level} d={`M${p1}L${p2}L${p3}`} fill="none" stroke="#839476" strokeOpacity=".22" />; })}
+        <SignalAxes project={projected} width={W} height={H} logMin={logMin} logMax={logMax} sigMax={sigMax} zMax={zMax}/>
+        {rows.map((row, index) => { const p = projected((row.logPRR - logMin) / (logMax - logMin), row.significance / sigMax, Math.log10(row.volume + 1) / zMax); return <circle key={`${row.reaction}-${index}`} cx={p[0]} cy={p[1]} r={3.5 + Math.log10(row.volume + 1)} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity=".8" stroke={flagged(row) ? '#8773a5' : '#477f79'} strokeWidth=".7" className="chart-point" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}, chi-square ${fmt(row.chi2, 2)}`} {...tooltip.bind(label(row.reaction), [...chartRows(row, recordLabel),['X · log₂(PRR)',fmt(row.logPRR,2)],['Y · −log₁₀(p)',fmt(row.significance,2)],['Z · log₁₀(a + 1)',fmt(Math.log10(row.volume+1),2)]], flagged(row) ? PALETTE[1] : PALETTE[0])} />; })}
+        <text x={W / 2} y={H - 10} textAnchor="middle" className="chart-cube-label">{W<500?'Axis values use the scales above':'Labeled axes rotate with the view · axis values use the scales above'}</text>
       </>}
     </svg>
     <Legend items={[{ label: 'Meets screening rule', color: PALETTE[1] }, { label: 'Other reactions', color: PALETTE[0] }]} note={mode === 'cube' ? 'Drag to rotate · focus points for detail' : 'PRR ≥ 2 · χ² ≥ 4 · a ≥ 3'} />

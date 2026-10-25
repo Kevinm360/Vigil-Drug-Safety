@@ -45,7 +45,7 @@ The main navigation has four sections: **Overview**, **Explore**, **Reports**, a
 | Overview | Weekly trend, drug comparison, cohort metrics, computed evidence brief, reaction bars, network preview |
 | Reactions | Ranked bars, area-proportional treemap, comparison, sortable/searchable table |
 | Case reports | Real live FAERS samples or clearly labeled synthetic archive records, CSV export |
-| Signal explorer | PRR/ROR with 95% intervals, count/ratio scatter, volcano plot, rotatable 3D projection, flags, weekly bursts |
+| Signal explorer | PRR/ROR with 95% intervals, count/ratio scatter, volcano plot, rotatable 3D projection with labeled axes, flags, weekly bursts |
 | What changed? | Baseline/current reporting shares, interval chart, searchable comparison table, connected reports, CSV export |
 | Severity | Live reported outcomes, demographics, and serious-reaction comparisons |
 | Network graph | Aligned drug–reaction map, count matrix, source highlighting, reaction search/sorting, selection, density controls |
@@ -90,7 +90,7 @@ npm test
 
 The regression suite checks query/cohort consistency, time aggregation, signal calculations and intervals, NLP negation, provenance, API validation, score alignment, held-out splitting, and alert filtering. Live smoke checks require network access and the configured openFDA key.
 
-Verified during implementation: production build; 91 Python regression tests and 29 frontend state/export/network/navigation/evidence/recovery tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
+Verified during implementation: production build; 91 Python regression tests and 32 frontend state/export/network/navigation/evidence/recovery/projection tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
 
 Comparison requests expose availability for volume, reactions, and totals separately. An unavailable value remains unknown instead of appearing as zero; a successful empty response remains a genuine zero. Comparison data can still load when the subject drug has no matching reports. Narrative tables and exports retain every analyzed record within the accepted upload limit.
 
@@ -144,3 +144,9 @@ The view shows raw report totals, per-reaction counts, count differences, report
 Uncertainty uses unadjusted 95% [Newcombe–Wilson intervals for the difference of two proportions](https://pubmed.ncbi.nlm.nih.gov/9595617/), built from [Wilson score intervals](https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm). Higher/lower share labels require the interval to exclude zero. These exploratory intervals do not correct for multiple comparisons, duplicate/dependent reports, reporting bias, or changes in case mix. They do not estimate incidence or individual medical risk. Raw counts from different-duration windows are explicitly marked as not directly comparable.
 
 Saved investigations now retain the baseline period as well as the current cohort. The local SQLite schema migrates existing investigations automatically, preserving their identifiers, notes, and revisions. Previous saves with no baseline use the immediately preceding equal-duration period when opened. The cache continues to store only eligible FDA aggregates/totals. `GET /api/changes` accepts the normal cohort fields plus `baseline_start` and `baseline_end`; no report text or credentials are added to saved comparison settings.
+
+### Reading the 3D signal view
+
+In **Explore → Signals → 3D signals**, the color-coded guide defines X as log₂(PRR), Y as −log₁₀(p), and Z as log₁₀(a + 1), where `a` is the drug–reaction co-occurrence count. Numeric ticks use those transformed scales. The labeled edges and orientation compass follow rotation; **Reset view** returns to the starting angle. Focus a point to inspect its exact values or select it to open the existing evidence drawer. Co-occurrence and volcano views remain available.
+
+The projection regression tests cover a full rotation at mobile and desktop widths, shared transforms for points and axes, and reset coordinates. This change was checked in the live FDA interface at desktop and 390-pixel phone widths, including rotation, keyboard selection, and the other chart modes.
