@@ -38,12 +38,15 @@ The archive, signal statistics, and narrative API work with Python's standard li
 
 ## Explore
 
+The main navigation has four sections: **Overview**, **Explore**, **Reports**, and **Lab**. Explore contains Reactions, Signals, What changed?, and Network; Reports contains Case reports and Severity & demographics; Lab contains Narrative analysis and Model studio. A smaller navigation row shows the views in the current section. Switching sections remembers the last view visited while the app remains open. Existing view bookmarks, saved investigations, and reaction shortcuts still open their original destinations. Saved investigations remains a workspace action below the cohort controls.
+
 | View | Available tools |
 | --- | --- |
 | Overview | Weekly trend, drug comparison, cohort metrics, computed evidence brief, reaction bars, network preview |
 | Reactions | Ranked bars, area-proportional treemap, comparison, sortable/searchable table |
 | Case reports | Real live FAERS samples or clearly labeled synthetic archive records, CSV export |
 | Signal explorer | PRR/ROR with 95% intervals, count/ratio scatter, volcano plot, rotatable 3D projection, flags, weekly bursts |
+| What changed? | Baseline/current reporting shares, interval chart, searchable comparison table, connected reports, CSV export |
 | Severity | Live reported outcomes, demographics, and serious-reaction comparisons |
 | Network graph | Aligned drug–reaction map, count matrix, source highlighting, reaction search/sorting, selection, density controls |
 | Narrative lab | Text/CSV analysis, device narrative retrieval, keywords, clinical and negated phrase mentions, lexical sentiment, contrastive terms, exports |
@@ -87,7 +90,7 @@ npm test
 
 The regression suite checks query/cohort consistency, time aggregation, signal calculations and intervals, NLP negation, provenance, API validation, score alignment, held-out splitting, and alert filtering. Live smoke checks require network access and the configured openFDA key.
 
-Verified during implementation: production build; 83 Python regression tests and 15 frontend state/export/network tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
+Verified during implementation: production build; 83 Python regression tests and 18 frontend state/export/network/navigation tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
 
 Comparison requests expose availability for volume, reactions, and totals separately. An unavailable value remains unknown instead of appearing as zero; a successful empty response remains a genuine zero. Comparison data can still load when the subject drug has no matching reports. Narrative tables and exports retain every analyzed record within the accepted upload limit.
 
@@ -116,7 +119,7 @@ Local API: `GET /api/investigations`, `GET /api/investigations?id=...`, `POST /a
 
 ## What changed? Period comparisons
 
-Open **What changed?** in the main navigation, or use **Compare periods** in Signal explorer. Both periods use the applied subject drug, source, age, sex, and reporter filters. The comparison drug is excluded from this view. Choose non-overlapping baseline/current dates, or a 30/90/180-day preset anchored to the current end date. **Compare & apply dates** updates the workspace's current period, so connected reports and signals use the same dates. Pending period edits are excluded from saved investigations.
+Open **Explore → What changed?**, or use **Compare periods** in Signal explorer. Both periods use the applied subject drug, source, age, sex, and reporter filters. The comparison drug is excluded from this view. Choose non-overlapping baseline/current dates, or a 30/90/180-day preset anchored to the current end date. **Compare & apply dates** updates the workspace's current period, so connected reports and signals use the same dates. Pending period edits are excluded from saved investigations.
 
 The view shows raw report totals, per-reaction counts, count differences, reporting shares, and current-minus-baseline share changes in percentage points. An interval chart, searchable table, direction/minimum-count controls, pagination, CSV exports, and links to matching reports support investigation. The candidate list is the union of the 50 most reported reactions in each period. An absent term is zero only when the underlying aggregation is complete; otherwise the server requests its exact count. Failed counts remain unknown. Empty periods have no share denominator and never receive an inferred share-change or newly-reported classification. “Only current period” means zero in the selected baseline, not a newly discovered reaction. Sparse counts are identified when either period has fewer than five reports for the reaction.
 
