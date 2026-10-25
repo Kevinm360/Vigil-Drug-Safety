@@ -1188,6 +1188,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 return self.send_json(self.service.period_changes(params))
             if parsed.path == "/api/investigations":
                 return self.investigation_response(lambda: self.service.investigations.get(params["id"]) if params.get("id") else {"investigations": self.service.investigations.list()})
+            if parsed.path == "/api/investigations/history":
+                return self.investigation_response(lambda: self.service.investigations.history(params.get("id")))
             if parsed.path == "/api/export":
                 kind = params.pop("kind", "reactions")
                 if kind not in {"reactions", "timeseries", "signals", "reports"}:

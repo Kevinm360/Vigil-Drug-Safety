@@ -3,6 +3,8 @@ import copy
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 import json
+import sqlite3
+from contextlib import closing
 from pathlib import Path
 import tempfile
 import threading
@@ -57,6 +59,49 @@ class InvestigationStoreTests(unittest.TestCase):
         self.assertNotEqual(first["id"], second["id"])
         self.assertEqual(len(self.store.list()), 2)
         self.assertEqual(self.store.get(first["id"])["notes"], DOCUMENT["notes"])
+
+    def test_revision_history_retains_original_notes_and_filters_across_restart(self):
+        first = self.store.save(DOCUMENT)
+        updated = self.store.save({**DOCUMENT, "id": first["id"], "revision": 1,
+                                   "notes": "Checked supporting records", "reaction": "RASH",
+                                   "cohort": {**COHORT, "sex": "Male"}})
+        history = InvestigationStore(self.path, validate_params).history(first["id"])
+        self.assertEqual(history["revision"], updated["revision"])
+        self.assertEqual([event["revision"] for event in history["events"]], [2, 1])
+        self.assertEqual(history["events"][0]["snapshot"]["reaction"], "RASH")
+        self.assertEqual(history["events"][1]["snapshot"]["notes"], DOCUMENT["notes"])
+        self.assertEqual(history["events"][1]["snapshot"]["cohort"]["sex"], "Female")
+        with self.assertRaises(InvestigationError):
+            self.store.save({**DOCUMENT, "id": first["id"], "revision": 1})
+        self.assertEqual(len(self.store.history(first["id"])["events"]), 2)
+
+    def test_legacy_library_starts_at_last_available_revision_without_inventing_history(self):
+        first = self.store.save(DOCUMENT)
+        with closing(self.store.connect()) as conn, conn:
+            conn.execute("DELETE FROM investigation_revisions")
+            conn.execute("UPDATE investigations SET revision=4 WHERE id=?", (first["id"],))
+        history = self.store.history(first["id"])
+        self.assertEqual([event["revision"] for event in history["events"]], [4])
+        self.assertEqual(history["events"][0]["kind"], "legacy")
+        self.store.save({**DOCUMENT, "id": first["id"], "revision": 4, "notes": "A later note"})
+        self.assertEqual([event["revision"] for event in self.store.history(first["id"])["events"]], [5, 4])
+        self.store.delete(first["id"], 5)
+        with closing(self.store.connect()) as conn:
+            self.assertEqual(conn.execute("SELECT count(*) FROM investigation_revisions").fetchone()[0], 0)
+        with self.assertRaises(InvestigationError) as error:
+            self.store.history(first["id"])
+        self.assertEqual(error.exception.status, 404)
+
+    def test_failed_history_write_rolls_back_the_entire_save(self):
+        first = self.store.save(DOCUMENT)
+        with closing(self.store.connect()) as conn, conn:
+            conn.execute("""CREATE TRIGGER reject_revision BEFORE INSERT ON investigation_revisions
+                WHEN NEW.revision=2 BEGIN SELECT RAISE(ABORT, 'write failed'); END""")
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.save({**DOCUMENT, "id": first["id"], "revision": 1, "notes": "Must roll back"})
+        self.assertEqual(self.store.get(first["id"])["notes"], DOCUMENT["notes"])
+        self.assertEqual(self.store.get(first["id"])["revision"], 1)
+        self.assertEqual(len(self.store.history(first["id"])["events"]), 1)
 
     def test_validation_rejects_incomplete_or_unexpected_data(self):
         variants = [{**DOCUMENT, "name": " "}, {**DOCUMENT, "notes": "x" * 10001},
@@ -145,6 +190,11 @@ class InvestigationHTTPTests(unittest.TestCase):
                 edit = {**DOCUMENT, "id": identifier, "revision": 1, "name": "Renamed investigation"}
                 self.assertEqual(request("POST", "/api/investigations/save", edit)[1]["revision"], 2)
                 self.assertEqual(request("POST", "/api/investigations/save", edit)[0], 409)
+                status, history = request("GET", "/api/investigations/history?id="+identifier)
+                self.assertEqual(status, 200)
+                self.assertEqual([event["revision"] for event in history["events"]], [2, 1])
+                self.assertEqual(history["events"][1]["snapshot"]["name"], DOCUMENT["name"])
+                self.assertEqual(request("GET", "/api/investigations/history?id=../secrets.toml")[0], 400)
                 self.assertEqual(request("POST", "/api/investigations/save", DOCUMENT, "https://attacker.example")[0], 403)
                 self.assertEqual(request("POST", "/api/investigations/delete", {"id": identifier, "revision": 2})[0], 200)
                 self.assertEqual(request("GET", "/api/investigations?id="+identifier)[0], 404)

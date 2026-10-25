@@ -42,6 +42,10 @@ class InvestigationStore:
                 except sqlite3.OperationalError:
                     if "periods" not in {row[1] for row in conn.execute("PRAGMA table_info(investigations)")}:
                         raise
+            conn.execute("""CREATE TABLE IF NOT EXISTS investigation_revisions (
+                investigation_id TEXT NOT NULL, revision INTEGER NOT NULL,
+                saved_at TEXT NOT NULL, kind TEXT NOT NULL, snapshot TEXT NOT NULL,
+                PRIMARY KEY (investigation_id, revision))""")
             return conn
         except Exception:
             conn.close()
@@ -74,6 +78,29 @@ class InvestigationStore:
             if row is None:
                 raise InvestigationError("Investigation not found.", 404)
             return self.decode(row)
+
+    @staticmethod
+    def record_revision(conn, row, kind):
+        # Copy only the same validated research context already kept by the library.
+        snapshot = InvestigationStore.decode(row)
+        conn.execute("""INSERT OR IGNORE INTO investigation_revisions
+            (investigation_id,revision,saved_at,kind,snapshot) VALUES (?,?,?,?,?)""",
+            (snapshot["id"], snapshot["revision"], snapshot["updated_at"], kind, json.dumps(snapshot)))
+
+    def history(self, identifier):
+        identifier = self.identifier(identifier)
+        with self.lock, closing(self.connect()) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT * FROM investigations WHERE id=?", (identifier,)).fetchone()
+            if row is None:
+                raise InvestigationError("Investigation not found.", 404)
+            # Existing libraries start at their last available save; earlier history is unknown.
+            self.record_revision(conn, row, "legacy" if row["revision"] > 1 else "created")
+            rows = conn.execute("""SELECT * FROM investigation_revisions
+                WHERE investigation_id=? ORDER BY revision DESC""", (identifier,))
+            return {"id": identifier, "revision": row["revision"], "events": [
+                {"revision": item["revision"], "saved_at": item["saved_at"],
+                 "kind": item["kind"], "snapshot": json.loads(item["snapshot"])} for item in rows]}
 
     def validate(self, body):
         allowed = {"id", "revision", "name", "notes", "cohort", "view", "reaction", "retrieved_at", "periods"}
@@ -126,6 +153,9 @@ class InvestigationStore:
         with self.lock, closing(self.connect()) as conn, conn:
             conn.execute("BEGIN IMMEDIATE")
             if body.get("id"):
+                previous = conn.execute("SELECT * FROM investigations WHERE id=?", (identifier,)).fetchone()
+                if previous is not None and previous["revision"] == revision:
+                    self.record_revision(conn, previous, "legacy" if revision > 1 else "created")
                 result = conn.execute("""UPDATE investigations SET name=?, notes=?, cohort=?, view=?, reaction=?,
                     retrieved_at=?, periods=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=?""",
                     (*values, now, identifier, revision))
@@ -137,6 +167,7 @@ class InvestigationStore:
                     raise InvestigationError("Your library holds 500 investigations. Remove an unused investigation before saving another.", 409)
                 conn.execute("INSERT INTO investigations (id,name,notes,cohort,view,reaction,retrieved_at,periods,created_at,updated_at,revision) VALUES (?,?,?,?,?,?,?,?,?,?,1)", (identifier, *values, now, now))
             row = conn.execute("SELECT * FROM investigations WHERE id=?", (identifier,)).fetchone()
+            self.record_revision(conn, row, "updated" if body.get("id") else "created")
             return self.decode(row)
 
     def delete(self, identifier, revision):
@@ -147,3 +178,4 @@ class InvestigationStore:
             if not conn.execute("DELETE FROM investigations WHERE id=? AND revision=?", (identifier, revision)).rowcount:
                 exists = conn.execute("SELECT 1 FROM investigations WHERE id=?", (identifier,)).fetchone()
                 raise InvestigationError("This investigation changed in another window. Refresh the library before deleting." if exists else "Investigation not found.", 409 if exists else 404)
+            conn.execute("DELETE FROM investigation_revisions WHERE investigation_id=?", (identifier,))

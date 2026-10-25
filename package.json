@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/test_workspace_state.mjs tests/test_network_data.mjs tests/test_investigation_state.mjs tests/test_period_state.mjs tests/test_navigation.mjs tests/test_evidence_state.mjs tests/test_dashboard_requests.mjs tests/test_signal_projection.mjs",
+    "test": "node --test tests/test_workspace_state.mjs tests/test_network_data.mjs tests/test_investigation_state.mjs tests/test_period_state.mjs tests/test_navigation.mjs tests/test_evidence_state.mjs tests/test_dashboard_requests.mjs tests/test_signal_projection.mjs tests/test_research_brief.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1"
