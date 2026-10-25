@@ -1,0 +1,21 @@
+# Private, single-owner workspace on free compute, with a separate free Neon database.
+services:
+  - type: web
+    name: vigil-drug-safety
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: VIGIL_DATA_DIR
+        value: /tmp/vigil
+      - key: VIGIL_REQUIRE_REMOTE_STORE
+        value: '1'
+      - key: VIGIL_DATABASE_URL
+        sync: false
+      - key: VIGIL_AUTH_USER
+        sync: false
+      - key: VIGIL_AUTH_PASSWORD
+        sync: false
+      - key: OPENFDA_API_KEY
+        sync: false

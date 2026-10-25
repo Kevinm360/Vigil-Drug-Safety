@@ -487,10 +487,13 @@ def model_overview():
 
 
 class DashboardService:
-    def __init__(self, root=ROOT, client=None):
+    def __init__(self, root=ROOT, client=None, storage_root=None):
         self.root = Path(root)
-        self.response_cache = SQLiteResponseCache(self.root / ".vigil-runtime" / "fda-cache.sqlite3")
-        self.investigations = InvestigationStore(self.root / ".vigil-workspace" / "investigations.sqlite3", validate_params)
+        self.workspace_location = "local"
+        runtime = Path(storage_root) / "cache" if storage_root else self.root / ".vigil-runtime"
+        workspace = Path(storage_root) / "workspace" if storage_root else self.root / ".vigil-workspace"
+        self.response_cache = SQLiteResponseCache(runtime / "fda-cache.sqlite3")
+        self.investigations = InvestigationStore(workspace / "investigations.sqlite3", validate_params)
         self.client = client or OpenFDAClient(cache_store=self.response_cache)
         self.device_client = OpenFDAClient(base_url="https://api.fda.gov/device/event.json", cache_store=self.response_cache)
         self.drug_client = OpenFDAClient(base_url="https://api.fda.gov/drug/ndc.json", cache_store=self.response_cache, cache_ttl=86400)
@@ -635,6 +638,7 @@ class DashboardService:
         reference = params["mode"] == "reference"
         return {
             "meta": {**params, "source": "Synthetic review archive · local" if reference else "openFDA · FAERS live",
+                     "workspace_location": self.workspace_location,
                      "status": "ok", "generated_at": utc_now(), "warnings": [],
                      "comparison": {"drug": params["compare"], "status": "unavailable" if params["compare"] else "not_requested",
                                     "total_available": False, "timeseries_available": False, "reactions_available": False,
@@ -1129,7 +1133,8 @@ def csv_response(rows):
     return output.getvalue()
 
 
-class DashboardHandler(BaseHTTPRequestHandler):
+class DashboardRoutes:
+    """Shared routes; local HTTP and hosted WSGI transports use the same methods."""
     server_version = "SignalMonitor/2.0"
     service = DashboardService()
     static_dir = ROOT / "dist"
@@ -1267,7 +1272,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 if not isinstance(stop, list) or len(stop) > 1000 or any(not isinstance(word, str) or len(word) > 100 for word in stop):
                     raise APIError("Custom stopwords must be a list of up to 1,000 short strings.")
                 config["custom_stopwords"] = [word.strip().lower() for word in stop]
-                return self.send_json(narratives_result(records, "User-provided text analyzed locally. Text is not persisted or sent to an AI service.", config))
+                return self.send_json(narratives_result(records, "User-provided text analyzed by the Vigil server. Text is not persisted or sent to a language-model service.", config))
             raise APIError("API route not found.", 404)
         except APIError as exc:
             self.send_json({"error": str(exc), "status": "error"}, exc.status)
@@ -1278,6 +1283,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self):
         self.do_GET()
+
+
+class DashboardHandler(DashboardRoutes, BaseHTTPRequestHandler):
+    pass
 
 
 def main():

@@ -1,6 +1,12 @@
 # Vigil · Side Effects Signal Monitor
 
-A React interface for the original FAERS signal dashboard, with a local Python API and the complete Streamlit app preserved.
+A research workspace for exploring FAERS reporting patterns, tracing reaction evidence, and keeping investigation notes. Built with React and a Python API; the complete original Streamlit app is preserved.
+
+[Short demo](docs/DEMO.md) · [Free private deployment](docs/DEPLOYMENT.md) · [v1 verification](docs/RELEASE-v1.md)
+
+Local-first, with a prepared free hosting configuration for a password-protected owner workspace. The hosted library uses PostgreSQL so saved investigations survive the free web server’s restarts; local use keeps SQLite. The cloud service has not been launched.
+
+![Vigil investigation walkthrough](docs/demo-v1.gif)
 
 The interface uses warm paper tones, editorial serif headings, thin rules, and an animated vertical line field inspired by AfterQuery. The animation uses original medical and data symbols, with a pause control and a static reduced-motion version. Every research tab also has an animated striped icon and a bottom color wash matched to its accent. Decorative motion pauses offscreen and when the tab is hidden. Charts use restrained, flat colors so the evidence remains readable.
 
@@ -68,7 +74,7 @@ The server reads `OPENFDA_API_KEY` from the environment or `.streamlit/secrets.t
 OPENFDA_API_KEY = "your-openFDA-key"
 ```
 
-Public requests are subject to openFDA authentication and rate limits. A failed live query displays its error and never silently substitutes synthetic data. FDA counts and aggregate responses are cached for five minutes; FDA drug-name lookups are cached for one day. A bounded SQLite cache in `.vigil-runtime/fda-cache.sqlite3` preserves these responses across restarts. Expired responses are never used as an offline fallback. Raw case reports, uploaded narratives, model outputs, and API keys are excluded from this database. If SQLite is unavailable, the app continues with memory caching and normal FDA requests. Uploaded narrative text is processed locally without persistence or transmission to a language-model service. The interface uses local system fonts and renders its decorative animation without external assets.
+Public requests are subject to openFDA authentication and rate limits. A failed live query displays its error and never silently substitutes synthetic data. FDA counts and aggregate responses are cached for five minutes; FDA drug-name lookups are cached for one day. A bounded SQLite cache in `.vigil-runtime/fda-cache.sqlite3` preserves these responses across restarts. Expired responses are never used as an offline fallback. Raw case reports, uploaded narratives, model outputs, and API keys are excluded from this database. If SQLite is unavailable, the app continues with memory caching and normal FDA requests. Uploaded narrative text is processed by the Vigil server without persistence or transmission to a language-model service. The interface uses local system fonts and renders its decorative animation without external assets.
 
 ## AI and data reliability
 
@@ -90,7 +96,7 @@ npm test
 
 The regression suite checks query/cohort consistency, time aggregation, signal calculations and intervals, NLP negation, provenance, API validation, score alignment, held-out splitting, and alert filtering. Live smoke checks require network access and the configured openFDA key.
 
-Verified during implementation: production build; 94 Python regression tests and 37 frontend state/export/network/navigation/evidence/recovery/projection/brief tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
+Verified during implementation: production build; 37 frontend tests and the Python regression suite, including hosted transport and storage contracts; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
 
 Comparison requests expose availability for volume, reactions, and totals separately. An unavailable value remains unknown instead of appearing as zero; a successful empty response remains a genuine zero. Comparison data can still load when the subject drug has no matching reports. Narrative tables and exports retain every analyzed record within the accepted upload limit.
 
@@ -161,4 +167,8 @@ Open the downloaded HTML in a browser and use **Print → Save as PDF** if desir
 
 `GET /api/investigations/history?id=<id>` returns recorded saves in descending revision order. History belongs to `.vigil-workspace/investigations.sqlite3`, separate from the disposable FDA cache. Back up that database with SQLite's backup API while the app is running, or copy the entire workspace directory with the app stopped. The existing save/open/notes/CSV workflows remain available.
 
-Validation: 94 backend and 37 frontend tests pass, including history migration, conflicting writes, atomic rollback on revision-write failure, export escaping, cohort/basis consistency, genuine zeros, and missing evidence. Browser checks used an isolated investigation database: first save, note update, reopening, both revisions, downloaded standalone HTML with its charts/notes/history, desktop and 390-pixel phone layouts, keyboard containment, Escape, and focus return. The test library is separate from personal saved investigations.
+The timeline/brief checkpoint passed 94 backend and 37 frontend tests, including history migration, conflicting writes, atomic rollback on revision-write failure, export escaping, cohort/basis consistency, genuine zeros, and missing evidence. Browser checks used an isolated investigation database: first save, note update, reopening, both revisions, downloaded standalone HTML with its charts/notes/history, desktop and 390-pixel phone layouts, keyboard containment, Escape, and focus return. The test library is separate from personal saved investigations.
+
+## Free private hosting
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The prepared Render Free Docker service serves React and the existing API through Gunicorn/Flask, with required owner authentication. A Neon Free PostgreSQL database holds hosted investigations and revisions; local launch still uses SQLite. The cache on the free web server is disposable. No cloud resource or account is created by the repository or tests, and personal local investigations are excluded from the image. Complete the provider-account setup and post-deployment checks before calling the app live.

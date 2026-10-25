@@ -51,6 +51,18 @@ class InvestigationStore:
             conn.close()
             raise
 
+    def initialize(self):
+        with closing(self.connect()) as conn:
+            conn.commit()
+
+    def healthy(self):
+        try:
+            with closing(sqlite3.connect(self.path.resolve().as_uri() + "?mode=ro", uri=True, timeout=1)) as conn:
+                conn.execute("SELECT 1 FROM investigations LIMIT 1").fetchone()
+            return True
+        except (OSError, sqlite3.Error):
+            return False
+
     @staticmethod
     def identifier(value):
         if not isinstance(value, str) or not re.fullmatch(r"[a-f0-9]{32}", value):

@@ -1,0 +1,9 @@
+# Hosted React/API runtime; local Streamlit and pipeline requirements remain separate.
+Flask>=3.1,<4
+gunicorn>=23,<25
+psycopg[binary]>=3.2,<4
+pandas>=2.2,<4
+numpy>=1.26,<3
+scikit-learn>=1.5,<2
+scipy>=1.13,<2
+xgboost>=2.1,<4
