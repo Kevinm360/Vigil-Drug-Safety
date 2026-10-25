@@ -1,8 +1,8 @@
 import React,{useId} from 'react';
-import {ChartNoAxesCombined,FileText,ScanLine,HeartPulse,Network,BrainCircuit,FlaskConical,Pause,Play} from 'lucide-react';
+import {ChartNoAxesCombined,FileText,ScanLine,HeartPulse,Network,BrainCircuit,FlaskConical,ArrowLeftRight,Pause,Play} from 'lucide-react';
 import useAmbientMotion from './useAmbientMotion.js';
 
-const SECTIONS={reactions:['02','Reported reactions',ChartNoAxesCombined,'#668e82'],reports:['03','Source records',FileText,'#8a95ac'],signals:['04','Statistical screening',ScanLine,'#9c8cb2'],severity:['05','Recorded outcomes',HeartPulse,'#b18b79'],network:['06','Connected evidence',Network,'#719798'],narratives:['07','Language & context',BrainCircuit,'#9c92af'],models:['08','Held-out evaluation',FlaskConical,'#8b9c77']};
+const SECTIONS={changes:['09','Reporting over time',ArrowLeftRight,'#9c9276'],reactions:['02','Reported reactions',ChartNoAxesCombined,'#668e82'],reports:['03','Source records',FileText,'#8a95ac'],signals:['04','Statistical screening',ScanLine,'#9c8cb2'],severity:['05','Recorded outcomes',HeartPulse,'#b18b79'],network:['06','Connected evidence',Network,'#719798'],narratives:['07','Language & context',BrainCircuit,'#9c92af'],models:['08','Held-out evaluation',FlaskConical,'#8b9c77']};
 
 export default function SectionMark({view}){
   const id=useId().replaceAll(':',''),section=SECTIONS[view];

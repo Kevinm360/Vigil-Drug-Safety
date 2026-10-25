@@ -1,7 +1,9 @@
+import {previousPeriod} from './periodState.js';
 export const normalizeReaction = value => String(value || '').trim().toUpperCase();
 
-export function snapshotKey({cohort, view, reaction}) {
-  return JSON.stringify([['mode','drug','compare','start','end','age','sex','reporters'].map(key => cohort[key]), view, normalizeReaction(reaction)]);
+export function snapshotKey({cohort, view, reaction, periods}) {
+  const baseline=periods?.baseline_start?periods:previousPeriod(cohort);
+  return JSON.stringify([['mode','drug','compare','start','end','age','sex','reporters'].map(key => cohort[key]), view, normalizeReaction(reaction),baseline.baseline_start,baseline.baseline_end]);
 }
 
 export function reactionChoices(data) {

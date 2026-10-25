@@ -7,6 +7,10 @@ import re
 import sqlite3
 import threading
 from uuid import uuid4
+try:
+    from .period_changes import validate_periods
+except ImportError:
+    from period_changes import validate_periods
 
 
 class InvestigationError(Exception):
@@ -32,6 +36,12 @@ class InvestigationStore:
                 cohort TEXT NOT NULL, view TEXT NOT NULL, reaction TEXT NOT NULL,
                 retrieved_at TEXT NOT NULL, created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL, revision INTEGER NOT NULL)""")
+            if "periods" not in {row[1] for row in conn.execute("PRAGMA table_info(investigations)")}:
+                try:
+                    conn.execute("ALTER TABLE investigations ADD COLUMN periods TEXT NOT NULL DEFAULT '{}'")
+                except sqlite3.OperationalError:
+                    if "periods" not in {row[1] for row in conn.execute("PRAGMA table_info(investigations)")}:
+                        raise
             return conn
         except Exception:
             conn.close()
@@ -47,6 +57,7 @@ class InvestigationStore:
     def decode(row, include_notes=True):
         result = dict(row)
         result["cohort"] = json.loads(result["cohort"])
+        result["periods"] = json.loads(result.get("periods", "{}"))
         if not include_notes:
             result.pop("notes")
         return result
@@ -65,7 +76,7 @@ class InvestigationStore:
             return self.decode(row)
 
     def validate(self, body):
-        allowed = {"id", "revision", "name", "notes", "cohort", "view", "reaction", "retrieved_at"}
+        allowed = {"id", "revision", "name", "notes", "cohort", "view", "reaction", "retrieved_at", "periods"}
         if set(body) - allowed:
             raise InvestigationError("Unknown investigation fields.")
         for key, limit in [("name", 120), ("notes", 10000), ("reaction", 200), ("retrieved_at", 40)]:
@@ -87,8 +98,14 @@ class InvestigationStore:
         # The API validator uses lists internally; the filter controls use CSV strings.
         cohort = {**cohort, "sex": ",".join(cohort["sex"]), "reporters": ",".join(cohort["reporters"])}
         view = body.get("view", "overview")
-        if not isinstance(view, str) or view not in {"overview", "reactions", "reports", "signals", "severity", "network", "narratives", "models"}:
+        if not isinstance(view, str) or view not in {"overview", "reactions", "reports", "signals", "severity", "network", "narratives", "models", "changes"}:
             raise InvestigationError("Choose a valid investigation tab.")
+        periods = body.get("periods", {})
+        if periods != {} or view == "changes":
+            try:
+                periods = validate_periods(periods, cohort)
+            except ValueError as exc:
+                raise InvestigationError(str(exc)) from None
         retrieved = body.get("retrieved_at", "")
         if retrieved:
             try:
@@ -97,7 +114,7 @@ class InvestigationStore:
                     raise ValueError()
             except ValueError:
                 raise InvestigationError("Invalid data retrieval timestamp.") from None
-        return name, body.get("notes", ""), json.dumps(cohort), view, body.get("reaction", "").strip().upper(), retrieved
+        return name, body.get("notes", ""), json.dumps(cohort), view, body.get("reaction", "").strip().upper(), retrieved, json.dumps(periods)
 
     def save(self, body):
         values = self.validate(body)
@@ -110,7 +127,7 @@ class InvestigationStore:
             conn.execute("BEGIN IMMEDIATE")
             if body.get("id"):
                 result = conn.execute("""UPDATE investigations SET name=?, notes=?, cohort=?, view=?, reaction=?,
-                    retrieved_at=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=?""",
+                    retrieved_at=?, periods=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=?""",
                     (*values, now, identifier, revision))
                 if not result.rowcount:
                     exists = conn.execute("SELECT 1 FROM investigations WHERE id=?", (identifier,)).fetchone()
@@ -118,7 +135,7 @@ class InvestigationStore:
             else:
                 if conn.execute("SELECT count(*) FROM investigations").fetchone()[0] >= 500:
                     raise InvestigationError("Your library holds 500 investigations. Remove an unused investigation before saving another.", 409)
-                conn.execute("INSERT INTO investigations VALUES (?,?,?,?,?,?,?,?,?,1)", (identifier, *values, now, now))
+                conn.execute("INSERT INTO investigations (id,name,notes,cohort,view,reaction,retrieved_at,periods,created_at,updated_at,revision) VALUES (?,?,?,?,?,?,?,?,?,?,1)", (identifier, *values, now, now))
             row = conn.execute("SELECT * FROM investigations WHERE id=?", (identifier,)).fetchone()
             return self.decode(row)
 

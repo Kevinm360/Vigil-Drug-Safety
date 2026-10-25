@@ -34,9 +34,11 @@ from urllib.request import Request, urlopen
 try:
     from .sqlite_cache import SQLiteResponseCache
     from .investigations import InvestigationStore, InvestigationError
+    from .period_changes import change_row, validate_periods
 except ImportError:  # Direct execution: python backend/server.py
     from sqlite_cache import SQLiteResponseCache
     from investigations import InvestigationStore, InvestigationError
+    from period_changes import change_row, validate_periods
 
 ROOT = Path(__file__).resolve().parents[1]
 OPENFDA_URL = "https://api.fda.gov/drug/event.json"
@@ -544,6 +546,67 @@ class DashboardService:
         return {"records": sample["records"], "total": total, "reaction": reaction,
                 "skipped_oversized": sample["skipped_oversized"],
                 "notice": "Latest matching FDA report sample, up to 20 reports. The reaction filter applies to this sample query; cohort charts and signal denominators remain unchanged."}
+
+    def period_changes(self, raw_params):
+        current = validate_params(raw_params, self.defaults())
+        try:
+            periods = validate_periods({key: raw_params.get(key) for key in ("baseline_start", "baseline_end")}, current)
+        except ValueError as exc:
+            raise APIError(str(exc)) from None
+        baseline = {**current, "start": periods["baseline_start"], "end": periods["baseline_end"]}
+        if current["mode"] == "reference" and (current["age"] != "All" or current["sex"] or current["reporters"]):
+            raise APIError("The synthetic archive has no patient or reporter filters.", 422)
+        if current["mode"] == "reference" and self.review_path() is None:
+            raise APIError("The synthetic archive is unavailable. Restore the review file before comparing periods.", 503)
+
+        def collect(params):
+            if params["mode"] == "reference":
+                selected = [row for row in self.reviews() if params["start"] <= row["created_at"][:10] <= params["end"] and canonical_drug(row.get("drug", row.get("drug_raw"))) == canonical_drug(params["drug"])]
+                counts = Counter(term.upper() for row in selected for term in reaction_mentions(row["review_text"]))
+                return {"total": len(selected), "counts": counts, "complete": True}
+            query = search_query(params)
+            total = self.client.count(query)
+            if not total:
+                return {"total": 0, "counts": {}, "complete": True}
+            rows = self.client.aggregate(query, "patient.reaction.reactionmeddrapt.exact", 1000)
+            counts = {}
+            for row in rows:
+                term, count = row.get("term"), row.get("count")
+                if not isinstance(term, str) or not term.strip() or type(count) is not int or not 0 <= count <= total:
+                    raise APIError("FDA returned inconsistent reaction counts. Reload the comparison to try again.", 502)
+                counts[term.upper()] = count
+            return {"total": total, "counts": counts, "complete": len(rows) < 1000}
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            jobs = [pool.submit(collect, params) for params in (baseline, current)]
+            before, after = [job.result() for job in jobs]
+        candidates = sorted(set(term for group in (before, after) for term, _ in Counter(group["counts"]).most_common(50)))
+        warnings = []
+        missing = [(group, params, term) for group, params in ((before, baseline), (after, current)) for term in candidates if term not in group["counts"] and not group["complete"]]
+        # Absence from a capped aggregate is unknown, never an assumed zero.
+        def exact_count(params, term):
+            escaped = term.replace('\\', '\\\\').replace('"', '\\"')
+            return self.client.count(search_query(params, flag=f'patient.reaction.reactionmeddrapt.exact:"{escaped}"'))
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            jobs = {pool.submit(exact_count, params, term): (group, term) for group, params, term in missing}
+            for job in as_completed(jobs):
+                group, term = jobs[job]
+                try:
+                    count = job.result()
+                    if type(count) is not int or not 0 <= count <= group["total"]:
+                        raise APIError("Inconsistent FDA count.", 502)
+                    group["counts"][term] = count
+                except APIError:
+                    group["counts"][term] = None
+                    warnings.append(f"An exact period count for {term} was unavailable; its change is unknown.")
+        rows = [change_row(term, before["counts"].get(term, 0), after["counts"].get(term, 0), before["total"], after["total"]) for term in candidates]
+        rows.sort(key=lambda row: (row["share_delta_pp"] is None, -abs(row["share_delta_pp"] or 0), row["reaction"]))
+        def describe(params, group):
+            return {"start": params["start"], "end": params["end"], "days": (date_value(params["end"], "end")-date_value(params["start"], "start")).days+1, "total_reports": group["total"]}
+        return {"meta": {"source": "Synthetic review archive · local" if current["mode"] == "reference" else "openFDA · FAERS live", "drug": current["drug"], "generated_at": utc_now(), "partial": bool(warnings), "warnings": warnings,
+                          "coverage": "Union of the 50 most reported reactions in each period; not an exhaustive reaction list.",
+                          "method": "Reporting-share difference (current minus baseline), percentage points. Unadjusted 95% Newcombe–Wilson intervals; exploratory, without correction for multiple comparisons. Reporting bias, duplicates, and dependence between reports are not captured."},
+                "periods": {"baseline": describe(baseline, before), "current": describe(current, after)}, "rows": rows}
 
     def reviews(self):
         path = self.review_path()
@@ -1063,6 +1126,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 return self.send_json(self.service.drug_names(params))
             if parsed.path == "/api/reaction-reports":
                 return self.send_json(self.service.reaction_reports(params))
+            if parsed.path == "/api/changes":
+                return self.send_json(self.service.period_changes(params))
             if parsed.path == "/api/investigations":
                 return self.investigation_response(lambda: self.service.investigations.get(params["id"]) if params.get("id") else {"investigations": self.service.investigations.list()})
             if parsed.path == "/api/export":
