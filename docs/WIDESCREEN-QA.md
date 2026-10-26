@@ -42,3 +42,14 @@ The latest approved layout caps the shared workspace at 1,600 pixels, supersedin
 Verified at 2560 × 1440: main width 1,600 pixels, no horizontal page overflow, report table container retains overflow-x: auto. At 390 × 844, the narrative input fits within the screen and the page has no horizontal overflow. Production build passed. Palette, feature logic, and text sizes are unchanged.
 
 [Narrower Narrative lab preview](preview-focused-narratives.png)
+
+
+## Subtle surface depth trial
+
+- Ivory chart panels and the metrics strip now have thin borders and 8px corners. Filters, investigation controls, and lab surfaces use matching corners.
+- Dropdowns, tooltips, dialogs, and the evidence drawer receive soft shadows. Static data cards remain shadow-free.
+- Editable fields have clearer borders and teal focus emphasis. Clickable rows and secondary buttons have stronger hover feedback.
+- At 1920 × 1200 and 390 × 844, all four overview panels fit their containers without horizontal page overflow. Mobile filter dialog opened and closed successfully, with no page overflow.
+- Production build passed. This is a CSS-only change; features and data logic are unchanged.
+
+[Surface depth preview](preview-soft-depth.png)

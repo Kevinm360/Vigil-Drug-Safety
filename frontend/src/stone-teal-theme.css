@@ -88,3 +88,46 @@ body,.app-shell{background:var(--bg);color:var(--ink)}
 @media(max-width:600px){
   .app-shell .hero-copy:before{background:radial-gradient(ellipse,#f2f1ec 46%,#f2f1ecdd 65%,#f2f1ec00 79%)}
 }
+
+/* Quiet data surfaces; floating elements carry the strongest depth cue. */
+.app-shell .panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:22px 20px 16px;min-width:0;
+}
+.app-shell .panel.brief-panel{padding-left:20px!important}
+.app-shell .stats-grid{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+}
+.app-shell .stat-card:first-child{padding-left:25px}
+.app-shell .filterbar,.app-shell .investigation-bar,
+.app-shell .narrative-layout>section:first-child,.app-shell .device-narrative-panel,
+.app-shell .model-intro{border-radius:8px}
+.app-shell .drug-suggestions,.app-shell .chart-tooltip{
+  border-radius:7px;box-shadow:0 4px 10px #29332f08,0 14px 32px #29332f14;
+}
+.app-shell .modal{border-radius:10px;box-shadow:0 8px 24px #29332f12,0 28px 72px #29332f24}
+.app-shell .evidence-drawer{box-shadow:-6px 0 18px #29332f08,-18px 0 44px #29332f10}
+.app-shell .drug-combobox-control,.app-shell .form-field .drug-combobox-control,
+.app-shell .reaction-focus select,.app-shell .form-field input,
+.app-shell .form-field select,.app-shell .source-select select,
+.app-shell .narrative-layout textarea{
+  border:1px solid #aab9b1;border-radius:6px;background:var(--surface);
+}
+.app-shell .drug-combobox-control{padding:5px 9px;min-height:36px}
+.app-shell .source-select select{padding:7px 9px}
+.app-shell .drug-combobox-control:focus-within,
+.app-shell .form-field input:focus-visible,.app-shell .form-field select:focus-visible,
+.app-shell .reaction-focus select:focus-visible,.app-shell textarea:focus-visible{
+  border-color:var(--mint);box-shadow:0 0 0 3px #326b6518;
+}
+.app-shell .horizontal-bar-row{border-radius:5px}
+.app-shell .horizontal-bar-row:hover,.app-shell .horizontal-bar-row:focus-visible,
+.app-shell .data-table tbody tr:hover td{background:var(--selected-surface)}
+.app-shell .btn.ghost:hover:not(:disabled){background:#dce6e0;border-color:#9db6aa}
+.app-shell .reaction-link:hover{text-decoration-color:var(--mint);text-decoration-thickness:2px}
+@media(max-width:600px){
+  .app-shell .panel{padding:18px 16px 14px}
+  .app-shell .panel.brief-panel{padding-left:16px!important}
+  .app-shell .drug-combobox-control{padding:4px 6px}
+  .app-shell .source-select select{max-width:100%}
+}
