@@ -132,10 +132,10 @@ function reactionInteraction(onSelect,value,selected){
   return {role:'button','aria-pressed':String(value||'').toUpperCase()===selected,onClick:()=>onSelect(value),onKeyDownCapture:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onSelect(value)}}};
 }
 
-export function HorizontalBars({ onSelect, selectedReaction='', data, valueKey = 'count', labelKey = 'reaction', color = PALETTE[0], valueLabel, showComparison, compareLabel = 'Comparison' }) {
+export function HorizontalBars({ onSelect, selectedReaction='', data, valueKey = 'count', labelKey = 'reaction', color = PALETTE[0], valueLabel, showComparison, compareLabel = 'Comparison', emptyMessage = 'No reactions match this selection.' }) {
   const tooltip = useTooltip();
   const rows = list(data).filter((row) => finite(row[valueKey] ?? row.count ?? row.reports ?? row.a));
-  if (!rows.length) return <EmptyChart message="No reactions match this selection." />;
+  if (!rows.length) return <EmptyChart message={emptyMessage} />;
   const compare = showComparison ?? rows.some((row) => number(row.compare_reports) > 0);
   const max = Math.max(0, ...rows.map((row) => number(row[valueKey] ?? row.count ?? row.reports ?? row.a)), ...(compare ? rows.map((row) => number(row.compare_reports)) : [])) || 1;
   const values = rows.map((row) => number(row[valueKey] ?? row.count ?? row.reports ?? row.a));
@@ -209,13 +209,13 @@ export function SignalPlot({ onSelect, selectedReaction='', data, recordLabel = 
   </div>;
 }
 
-export function DonutChart({ data, labelKey = 'label', valueKey = 'count' }) {
+export function DonutChart({ data, labelKey = 'label', valueKey = 'count', emptyMessage = 'No outcome breakdown is available for this selection.' }) {
   const tooltip = useTooltip();
   const donutId = useId().replaceAll(':', '');
   const [active, setActive] = useState(null);
   const rows = list(data).map((row) => ({ ...row, name: label(row[labelKey] ?? row.name ?? row.outcome ?? row.seriousness ?? row.category), value: number(row[valueKey] ?? row.reports ?? row.value) })).filter((row) => row.value > 0);
   const total = rows.reduce((sum, row) => sum + row.value, 0);
-  if (!total) return <EmptyChart message="No outcome breakdown is available for this selection." />;
+  if (!total) return <EmptyChart message={emptyMessage} />;
   const radius = 77, circumference = 2 * Math.PI * radius;
   let offset = 0;
   return <div className="chart-shell donut-chart" ref={tooltip.ref}>

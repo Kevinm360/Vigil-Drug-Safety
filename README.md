@@ -50,6 +50,8 @@ The archive, signal statistics, and narrative API work with Python's standard li
 
 The main navigation has four sections: **Overview**, **Explore**, **Reports**, and **Lab**. Explore contains Reactions, Signals, What changed?, and Network; Reports contains Case reports and Severity & demographics; Lab contains Narrative analysis and Model studio. A smaller navigation row shows the views in the current section. Switching sections remembers the last view visited while the app remains open. Existing view bookmarks, saved investigations, and reaction shortcuts still open their original destinations. Saved investigations remains a workspace action below the cohort controls.
 
+Working views use compact animated headers and fewer nested cards. In Lab, **Edit cohort & source** expands the complete cohort controls; the active subject, dates, and source remain visible above the editor or training setup. Text analysis is available while cohort context loads. Model studio groups training controls separately from evaluation results and methodology. See the [layout verification and saved-version checkpoint](docs/TASK-LAYOUT-QA.md).
+
 | View | Available tools |
 | --- | --- |
 | Overview | Weekly trend, drug comparison, cohort metrics, computed evidence brief, reaction bars, network preview |

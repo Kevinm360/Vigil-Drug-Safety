@@ -80,7 +80,7 @@ export function DeviceNarrativeFetch({ start, end, onResult }) {
       <div className="device-fetch-fields">
         <label className="form-field" htmlFor={`${id}-term`}>Device name <span className="device-optional">optional</span><div className="device-term-input"><Search size={15} aria-hidden="true"/><input id={`${id}-term`} value={term} onChange={event => setTerm(event.target.value)} maxLength={120} placeholder="e.g. insulin pump or pacemaker" disabled={busy}/></div></label>
         <label className="form-field" htmlFor={`${id}-limit`}>Sample size<select id={`${id}-limit`} value={limit} onChange={event => setLimit(Number(event.target.value))} disabled={busy}>{[25, 50, 100, 250, 500].map(size => <option key={size} value={size}>Up to {size} reports</option>)}</select></label>
-        <button className="btn primary device-fetch-submit" type="submit" disabled={busy}>{busy ? <LoaderCircle size={16} className="spin" aria-hidden="true"/> : <ArrowDownToLine size={16} aria-hidden="true"/>}{busy ? 'Fetching narratives…' : 'Fetch FDA sample'}</button>
+        <button className="btn ghost device-fetch-submit" type="submit" disabled={busy}>{busy ? <LoaderCircle size={16} className="spin" aria-hidden="true"/> : <ArrowDownToLine size={16} aria-hidden="true"/>}{busy ? 'Fetching narratives…' : 'Fetch FDA sample'}</button>
       </div>
       <p className="device-fetch-dates">Receipt dates <strong>{start || 'Set start date'} <span aria-hidden="true">→</span> {end || 'Set end date'}</strong><span>Uses the date window in your cohort filters. An empty device name searches all devices.</span></p>
       {error && <p className="inline-error" role="alert">{error}</p>}
