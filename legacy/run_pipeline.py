@@ -1,12 +1,14 @@
 import pandas as pd
 from pathlib import Path
-from pipeline.ingest import ingest_to_csv
-from pipeline.label import distant_supervision
-from pipeline.train import load_training, train_model
-from pipeline.score import score_new_reviews
-from pipeline.signal import compute_signals, persist_to_duckdb
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from legacy.pipeline.ingest import ingest_to_csv
+from legacy.pipeline.label import distant_supervision
+from legacy.pipeline.train import load_training, train_model
+from legacy.pipeline.score import score_new_reviews
+from legacy.pipeline.signal import compute_signals, persist_to_duckdb
 
-DUCKDB_PATH = "side_effects.duckdb"
+DUCKDB_PATH = "data/legacy/side_effects.duckdb"
 
 def main():
     # This is a synthetic demonstration pipeline, separate from live FAERS.

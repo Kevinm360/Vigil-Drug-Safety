@@ -1,14 +1,14 @@
 # Restored capabilities and data provenance
 
-The supplied Python sources are restored under `app/`, `pipeline/`, `flows/`, and `jobs/`. An untouched source snapshot is retained under `original_sources/`. The supplied screenshots and original README are in `docs/reference/`. Credentials, compiled bytecode, and serialized pickle models were not imported.
+The active prediction model is in `backend/serious_outcome.py`. The supplied Python sources are preserved under `legacy/app/`, `legacy/pipeline/`, `legacy/flows/`, and `legacy/jobs/`. An untouched source snapshot is retained under `legacy/original_sources/`. The supplied screenshots and original README are in `docs/reference/`. Credentials, compiled bytecode, and serialized pickle models were not imported.
 
 ## Original application
 
-Run from the repository root with Python 3.11 and `requirements-legacy.txt`:
+Run from the repository root with Python 3.11 and `config/requirements/legacy.txt`:
 
 ```powershell
-python -m pip install -r requirements-legacy.txt
-python -m streamlit run app/streamlit_app.py
+python -m pip install -r config/requirements/legacy.txt
+python -m streamlit run legacy/app/streamlit_app.py
 ```
 
 All original visualizations and controls remain available in this application:
@@ -35,7 +35,7 @@ All original visualizations and controls remain available in this application:
 | `data/silver/labels.parquet` | 2,000 | Keyword taxonomy labels derived from those review texts |
 | `data/gold/scores.parquet` | 2,000 | Historical model output; row-to-text alignment is not validated |
 | `data/gold/signals.parquet` | 1,345 | Historical weekly aggregates from the original demo pipeline |
-| `side_effects.duckdb` | — | Original supplied database retained as an artifact |
+| `data/legacy/side_effects.duckdb` | — | Original supplied database retained as an artifact |
 
 These reviews are not real FAERS records. For example, supplied review 1 says "tremor" and has a neurological label, while its cached neurological score is approximately 0.057 and cardiovascular score is approximately 0.958. Cached scores and signals must therefore be treated as illustrative legacy artifacts. They are retained without being rewritten, so the supplied files remain available for inspection.
 

@@ -1,4 +1,4 @@
-# app/streamlit_app.py
+# legacy/app/streamlit_app.py
 import streamlit as st
 
 # ⬇️ compatibility shim: if cache_data doesn't exist, alias it to st.cache

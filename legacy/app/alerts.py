@@ -6,8 +6,8 @@ from typing import Iterable, Optional, Dict, List
 import pandas as pd
 
 # Reuse your existing modules
-from app.faers_client import reaction_counts_for_drug, reaction_counts_all, timeseries, _get_api_key  # type: ignore
-from app.ml_signal import score_reactions, burst_zscores
+from legacy.app.faers_client import reaction_counts_for_drug, reaction_counts_all, timeseries, _get_api_key  # type: ignore
+from legacy.app.ml_signal import score_reactions, burst_zscores
 
 DEFAULTS = {
     "prr_min": 2.0,

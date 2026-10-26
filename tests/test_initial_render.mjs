@@ -6,7 +6,7 @@ import {createServer} from 'vite';
 
 test('every bookmarked view renders before cohort data arrives; Lab exposes its task controls',async()=>{
   const previousLocation=globalThis.location,previousWindow=globalThis.window;
-  const server=await createServer({server:{middlewareMode:true,hmr:false},logLevel:'silent'});
+  const server=await createServer({configFile:'config/vite.config.js',server:{middlewareMode:true,hmr:false},logLevel:'silent'});
   try{
     globalThis.window={sessionStorage:{getItem:()=>null},matchMedia:()=>({matches:false})};
     const {App}=await server.ssrLoadModule('/src/main.jsx');

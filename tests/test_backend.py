@@ -211,7 +211,7 @@ class SeriousOutcomeIntegrityTests(unittest.TestCase):
     def setUpClass(cls):
         try:
             import pandas as pd
-            from app import serious_outcome
+            from backend import serious_outcome
         except ImportError:
             raise unittest.SkipTest("Optional machine-learning dependencies are not installed.")
         cls.pd, cls.module = pd, serious_outcome

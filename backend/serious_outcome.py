@@ -470,7 +470,7 @@ def train_seriousness_models(frame: pd.DataFrame) -> Dict[str, Any]:
     except ImportError as exc:
         raise ImportError(
             "XGBoost is required for Serious Outcome Classification. "
-            "Install the updated requirements.txt."
+            "Install the updated config/requirements/local.txt."
         ) from exc
 
     y = frame[TARGET_COLUMN].astype(int).copy()

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from app import alerts
+from legacy.app import alerts
 
 
 class LegacyAlertTests(unittest.TestCase):

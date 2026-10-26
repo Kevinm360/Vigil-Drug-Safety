@@ -1,7 +1,7 @@
 """Production WSGI transport for the existing dashboard routes.
 
 Authenticated owner workspaces and optional isolated public visitor workspaces.
-Local start.ps1 and the original HTTP API remain available without Flask.
+Local scripts/start.ps1 and the original HTTP API remain available without Flask.
 """
 import base64
 import binascii

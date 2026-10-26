@@ -7,12 +7,12 @@ Implementation details, local setup, and research workflows. For the short tour,
 From this project folder in PowerShell:
 
 ```powershell
-.\start.ps1
+.\scripts\start.ps1
 ```
 
 Open **http://127.0.0.1:8766**. The launcher builds the React app and serves it with the API on one local port. It installs dependencies if the project environment is missing. Node.js 22+ and Python 3.12 or 3.13 are recommended.
 
-To keep the app running after you close the terminal, use `.\start.ps1 -Background`. Stop that background app with `.\stop.ps1`. Use `-Port 8765` if you want to reuse a browser tab already pointing at port 8765. Background process details and logs stay in the ignored `.vigil-runtime/` directory.
+To keep the app running after you close the terminal, use `.\scripts\start.ps1 -Background`. Stop that background app with `.\scripts\stop.ps1`. Use `-Port 8765` if you want to reuse a browser tab already pointing at port 8765. Background process details and logs stay in the ignored `.vigil-runtime/` directory.
 
 The subject and comparison fields provide a searchable dropdown of FDA brand and generic names, with debounced lookup, keyboard selection, and incremental browsing. Suggestions come from the FDA NDC directory independently of the active cohort; directory listings do not imply FDA approval. Browse results are bounded, and typing searches the directory more specifically. Manual drug-name entry remains available if suggestions cannot load. Archive mode lists only its available drugs.
 
@@ -22,7 +22,7 @@ Manual setup:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r config/requirements/local.txt
 npm ci
 npm run build
 .\.venv\Scripts\python.exe backend/server.py --port 8766
@@ -51,10 +51,10 @@ Working views use compact animated headers and fewer nested cards. In Lab, **Edi
 The complete original app remains available for its original Plotly 3D scatter, Three.js force graph, PyVis graph physics, and advanced Streamlit controls:
 
 ```powershell
-.\.venv\Scripts\python.exe -m streamlit run app/streamlit_app.py
+.\.venv\Scripts\python.exe -m streamlit run legacy/app/streamlit_app.py
 ```
 
-Untouched original sources are in `original_sources/`. Restoration details and the functionality matrix are in [docs/RESTORATION.md](RESTORATION.md). The original screenshot, animation, and README are in `docs/reference/`.
+Untouched original sources are in `legacy/original_sources/`. Restoration details and the functionality matrix are in [docs/RESTORATION.md](RESTORATION.md). The original screenshot, animation, and README are in `docs/reference/`.
 
 ## Credentials
 
@@ -92,7 +92,7 @@ Comparison requests expose availability for volume, reactions, and totals separa
 
 Repeat a live check with `.\.venv\Scripts\python.exe tests/smoke_live.py --train 300 --device-narratives`.
 
-The original Prefect/MLflow workflow is retained separately. Install `requirements-pipeline.txt` to run `run_pipeline.py`. Scheduling and notifications have not been activated by the redesign.
+The original Prefect/MLflow workflow is retained separately. Install `config/requirements/pipeline.txt` to run `legacy/run_pipeline.py`. Scheduling and notifications have not been activated by the redesign.
 
 
 ## Loading, recovery, and freshness
@@ -116,7 +116,7 @@ Only public FDA aggregates, totals, and NDC name results are persisted. Count-on
 
 Use **Save investigation** to name the applied cohort and add research notes. The saved workspace includes the subject/comparison drugs, dates, demographic and reporter filters, current tab, selected reaction, and the data retrieval time. Unapplied filter edits are excluded. **Saved investigations** opens a searchable library; opening an entry restores the controls and reaction focus and reloads data. **Save / edit notes** updates it, while **Save as new** keeps a separate investigation. Deletion requires an inline confirmation. Revision checks prevent another browser window from silently overwriting or deleting a newer save.
 
-Research notes and workspace settings live in `.vigil-workspace/investigations.sqlite3`, separate from `.vigil-runtime/` and its disposable FDA cache. Both folders are ignored by Git. To back up your investigations, stop Vigil with `stop.ps1` and copy the entire `.vigil-workspace` folder to your backup location; restore that folder while the app is stopped. Git checkpoints preserve the application code, not your private investigation library. Saved investigations survive app restarts but do not freeze FDA data or save case report contents, uploaded text, model outputs, or credentials. The library accepts up to 500 investigations and 10,000 characters of notes per investigation.
+Research notes and workspace settings live in `.vigil-workspace/investigations.sqlite3`, separate from `.vigil-runtime/` and its disposable FDA cache. Both folders are ignored by Git. To back up your investigations, stop Vigil with `scripts/stop.ps1` and copy the entire `.vigil-workspace` folder to your backup location; restore that folder while the app is stopped. Git checkpoints preserve the application code, not your private investigation library. Saved investigations survive app restarts but do not freeze FDA data or save case report contents, uploaded text, model outputs, or credentials. The library accepts up to 500 investigations and 10,000 characters of notes per investigation.
 
 Click a reaction bar, treemap tile, signal point, reaction table link, or network row to set **Reaction focus**. The focus remains when switching tabs, and its shortcuts lead to **Case reports**, **Signal evidence**, and **Network**. The focused report endpoint queries the same subject, dates, and demographic/reporter cohort plus the exact quoted reaction term; it shows a bounded sample of the latest 20 matching FDA reports and their aggregate matching count. The synthetic archive uses exact extracted terms instead. Failed queries show an error instead of substituting unfiltered records. Signal evidence and its CSV export follow the selected reaction; the chart retains the full landscape and highlights it. Cohort charts and PRR/ROR denominators remain unchanged. Applying a new cohort clears the old focus; opening a saved investigation restores its saved focus.
 

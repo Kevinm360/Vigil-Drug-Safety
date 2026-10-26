@@ -1,12 +1,12 @@
-# jobs/weekly_alerts.py
+# legacy/jobs/weekly_alerts.py
 from __future__ import annotations
 import os, json, sys
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from app.alerts import compute_weekly_alerts, send_slack, send_email
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from legacy.app.alerts import compute_weekly_alerts, send_slack, send_email
 
 # pick how you choose drugs:
 MONITORED_DRUGS = os.getenv("MONITORED_DRUGS","IBUPROFEN,ACETAMINOPHEN,METFORMIN").split(",")

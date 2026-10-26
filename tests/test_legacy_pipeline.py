@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pandas as pd
 
-from pipeline.score import score_new_reviews
-from pipeline.train import TARGETS, prepare_holdout
+from legacy.pipeline.score import score_new_reviews
+from legacy.pipeline.train import TARGETS, prepare_holdout
 
 
 class LegacyPipelineTests(unittest.TestCase):

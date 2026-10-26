@@ -460,7 +460,7 @@ def graph_result(drug_counts, signal_rows=None):
 
 
 def _model_constants():
-    path = ROOT / "app" / "serious_outcome.py"
+    path = ROOT / "backend" / "serious_outcome.py"
     values = {}
     if path.is_file():
         for node in ast.parse(path.read_text(encoding="utf-8-sig")).body:
@@ -968,12 +968,13 @@ class DashboardService:
         max_records = integer(raw_params.get("max_records"), 1000, 200, 5000)
         try:
             import pandas as pd
-            if str(ROOT / "app") not in sys.path:
-                sys.path.insert(0, str(ROOT / "app"))
-            import serious_outcome
+            if __package__:
+                from . import serious_outcome
+            else:
+                import serious_outcome
             import xgboost  # noqa: F401 -- check before expensive network work
         except ImportError:
-            raise APIError("Model training dependencies are missing. Install requirements.txt (scikit-learn and XGBoost) in the Python environment running this server.", 503) from None
+            raise APIError("Model training dependencies are missing. Install config/requirements/local.txt (scikit-learn and XGBoost) in the Python environment running this server.", 503) from None
         if not self.training_lock.acquire(blocking=False):
             raise APIError("A model training run is already in progress. Wait for it to finish.", 409)
         try:

@@ -1,21 +1,22 @@
 param([ValidateRange(1024,65535)][int]$Port = 8766, [switch]$Background)
 $ErrorActionPreference = 'Stop'
-Set-Location -LiteralPath $PSScriptRoot
-$projectPython = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
+$projectRoot = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $projectRoot
+$projectPython = Join-Path $projectRoot '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $projectPython)) {
     Write-Host 'Creating a Python virtual environment…'
     python -m venv .venv
     if ($LASTEXITCODE -ne 0) { throw 'Python environment setup failed. Use Python 3.12 or 3.13.' }
 }
-$pythonRequirementsHash = (Get-FileHash -LiteralPath 'requirements.txt' -Algorithm SHA256).Hash
-$pythonMarker = Join-Path $PSScriptRoot '.venv\requirements.sha256'
+$pythonRequirementsHash = (Get-FileHash -LiteralPath 'config/requirements/local.txt' -Algorithm SHA256).Hash
+$pythonMarker = Join-Path $projectRoot '.venv\requirements.sha256'
 if (-not (Test-Path -LiteralPath $pythonMarker) -or (Get-Content -LiteralPath $pythonMarker -Raw).Trim() -ne $pythonRequirementsHash) {
-    & $projectPython -m pip install -r requirements.txt
+    & $projectPython -m pip install -r config/requirements/local.txt
     if ($LASTEXITCODE -ne 0) { throw 'Python dependency installation failed. Re-running this launcher will retry.' }
     Set-Content -LiteralPath $pythonMarker -Value $pythonRequirementsHash
 }
 $nodeRequirementsHash = (Get-FileHash -LiteralPath 'package-lock.json' -Algorithm SHA256).Hash
-$nodeMarker = Join-Path $PSScriptRoot 'node_modules\.vigil-dependencies.sha256'
+$nodeMarker = Join-Path $projectRoot 'node_modules\.vigil-dependencies.sha256'
 if (-not (Test-Path -LiteralPath $nodeMarker) -or (Get-Content -LiteralPath $nodeMarker -Raw).Trim() -ne $nodeRequirementsHash) {
     npm.cmd ci --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
@@ -36,11 +37,11 @@ if ($Background) {
     } catch {
         if ($_.Exception.Message -like '*already serving another*') { throw }
     }
-    $runtimeDirectory = Join-Path $PSScriptRoot '.vigil-runtime'
+    $runtimeDirectory = Join-Path $projectRoot '.vigil-runtime'
     New-Item -ItemType Directory -Path $runtimeDirectory -Force | Out-Null
     $stdoutPath = Join-Path $runtimeDirectory 'server.log'
     $stderrPath = Join-Path $runtimeDirectory 'server-error.log'
-    $serverProcess = Start-Process -FilePath $projectPython -ArgumentList @('backend/server.py', '--port', "$Port") -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+    $serverProcess = Start-Process -FilePath $projectPython -ArgumentList @('backend/server.py', '--port', "$Port") -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
     $serverReady = $false
     for ($attempt = 0; $attempt -lt 20; $attempt++) {
         $serverProcess.Refresh()
@@ -56,7 +57,7 @@ if ($Background) {
         throw "The app did not become ready. See $stderrPath"
     }
     @{pid=$serverProcess.Id; port=$Port; url=$appUrl; started_at=[DateTimeOffset]::Now.ToString('o')} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runtimeDirectory 'server.json')
-    Write-Host "Vigil is running at $appUrl. It will keep running when this terminal closes. Use .\stop.ps1 to stop it."
+    Write-Host "Vigil is running at $appUrl. It will keep running when this terminal closes. Use .\scripts\stop.ps1 to stop it."
     return
 }
 Write-Host 'Press Ctrl+C to stop.'
