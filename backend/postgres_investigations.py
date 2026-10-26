@@ -22,11 +22,12 @@ def database_errors(method):
 
 
 class PostgresInvestigationStore(InvestigationStore):
-    def __init__(self, url, validate_cohort):
+    def __init__(self, url, validate_cohort, workspace="owner"):
         parsed = urlsplit(url)
         if parsed.scheme not in {"postgres", "postgresql"} or not parsed.hostname or not parsed.path.strip("/"):
             raise ValueError("Provide a complete hosted PostgreSQL connection URL.")
         self.url, self.validate_cohort = url, validate_cohort
+        self.workspace = workspace
         self.local = parsed.hostname in {"127.0.0.1", "localhost", "postgres"}
         if not self.local and parse_qs(parsed.query).get("sslmode", ["require"])[-1] not in {"require", "verify-ca", "verify-full"}:
             raise ValueError("Hosted database connections require TLS.")
@@ -52,6 +53,8 @@ class PostgresInvestigationStore(InvestigationStore):
         with self.connect() as conn:
             conn.execute("SELECT pg_advisory_xact_lock(73465001)")
             conn.execute("CREATE TABLE IF NOT EXISTS vigil_investigations (id TEXT PRIMARY KEY, document JSONB NOT NULL)")
+            conn.execute("ALTER TABLE vigil_investigations ADD COLUMN IF NOT EXISTS workspace_id TEXT NOT NULL DEFAULT 'owner'")
+            conn.execute("CREATE INDEX IF NOT EXISTS vigil_investigations_workspace ON vigil_investigations(workspace_id)")
             conn.execute("""CREATE TABLE IF NOT EXISTS vigil_investigation_revisions (
                 investigation_id TEXT NOT NULL REFERENCES vigil_investigations(id) ON DELETE CASCADE,
                 revision INTEGER NOT NULL, saved_at TEXT NOT NULL, kind TEXT NOT NULL, snapshot JSONB NOT NULL,
@@ -68,7 +71,7 @@ class PostgresInvestigationStore(InvestigationStore):
     @database_errors
     def list(self):
         with self.connect() as conn:
-            documents = [row[0] for row in conn.execute("SELECT document FROM vigil_investigations ORDER BY document->>'updated_at' DESC,id DESC")]
+            documents = [row[0] for row in conn.execute("SELECT document FROM vigil_investigations WHERE workspace_id=%s ORDER BY document->>'updated_at' DESC,id DESC", (self.workspace,))]
         for document in documents:
             document.pop("notes", None)
         return documents
@@ -77,7 +80,7 @@ class PostgresInvestigationStore(InvestigationStore):
     def get(self, identifier):
         identifier = self.identifier(identifier)
         with self.connect() as conn:
-            row = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s", (identifier,)).fetchone()
+            row = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s AND workspace_id=%s", (identifier, self.workspace)).fetchone()
         if row is None:
             raise InvestigationError("Investigation not found.", 404)
         return row[0]
@@ -94,7 +97,7 @@ class PostgresInvestigationStore(InvestigationStore):
         identifier = self.identifier(identifier)
         with self.connect() as conn:
             conn.execute("SELECT pg_advisory_xact_lock(73465002)")
-            row = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s", (identifier,)).fetchone()
+            row = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s AND workspace_id=%s", (identifier, self.workspace)).fetchone()
             if row is None:
                 raise InvestigationError("Investigation not found.", 404)
             document = row[0]
@@ -114,21 +117,22 @@ class PostgresInvestigationStore(InvestigationStore):
         now = datetime.now(timezone.utc).isoformat()
         with self.connect() as conn:
             conn.execute("SELECT pg_advisory_xact_lock(73465002)")
-            previous = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s", (identifier,)).fetchone()
+            previous = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s AND workspace_id=%s", (identifier, self.workspace)).fetchone()
             if body.get("id"):
                 if previous is None:
                     raise InvestigationError("Investigation not found.", 404)
                 if previous[0]["revision"] != revision:
                     raise InvestigationError("This investigation changed in another window. Open its latest version before updating.", 409)
                 self.record(conn, previous[0], "legacy" if revision > 1 else "created")
-            elif conn.execute("SELECT count(*) FROM vigil_investigations").fetchone()[0] >= 500:
+            elif conn.execute("SELECT count(*) FROM vigil_investigations WHERE workspace_id=%s", (self.workspace,)).fetchone()[0] >= 500:
                 raise InvestigationError("Your library holds 500 investigations. Remove an unused investigation before saving another.", 409)
             document = {"id": identifier, "name": name, "notes": notes, "cohort": json.loads(cohort), "view": view,
                         "reaction": reaction, "retrieved_at": retrieved, "periods": json.loads(periods),
                         "created_at": previous[0]["created_at"] if previous else now,
                         "updated_at": now, "revision": revision + 1 if previous else 1}
-            conn.execute("""INSERT INTO vigil_investigations (id,document) VALUES (%s,%s)
-                ON CONFLICT (id) DO UPDATE SET document=EXCLUDED.document""", (identifier, Jsonb(document)))
+            conn.execute("""INSERT INTO vigil_investigations (id,document,workspace_id) VALUES (%s,%s,%s)
+                ON CONFLICT (id) DO UPDATE SET document=EXCLUDED.document
+                WHERE vigil_investigations.workspace_id=EXCLUDED.workspace_id""", (identifier, Jsonb(document), self.workspace))
             self.record(conn, document, "updated" if previous else "created")
         return document
 
@@ -139,9 +143,9 @@ class PostgresInvestigationStore(InvestigationStore):
             raise InvestigationError("Provide the saved investigation revision.")
         with self.connect() as conn:
             conn.execute("SELECT pg_advisory_xact_lock(73465002)")
-            row = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s", (identifier,)).fetchone()
+            row = conn.execute("SELECT document FROM vigil_investigations WHERE id=%s AND workspace_id=%s", (identifier, self.workspace)).fetchone()
             if row is None:
                 raise InvestigationError("Investigation not found.", 404)
             if row[0]["revision"] != revision:
                 raise InvestigationError("This investigation changed in another window. Refresh the library before deleting.", 409)
-            conn.execute("DELETE FROM vigil_investigations WHERE id=%s", (identifier,))
+            conn.execute("DELETE FROM vigil_investigations WHERE id=%s AND workspace_id=%s", (identifier, self.workspace))

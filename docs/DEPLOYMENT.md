@@ -1,4 +1,28 @@
-# Free private deployment for Vigil v1
+# Free deployment for Vigil v1
+
+## Public portfolio access without a login prompt
+
+On the Render web service, add `VIGIL_PUBLIC_VISITORS=1`, then deploy the latest
+`codex/v1-release` commit. Keep the Neon database URL, FDA key, data directory,
+and remote-store requirement. Existing owner authentication variables can stay:
+visitor mode bypasses the owner login and exposes only visitor libraries.
+Do not combine this mode with `VIGIL_PUBLIC_DEMO=1` (the older read-only demo).
+
+All research routes remain available, including investigations, revisions,
+exports, model training, and narrative analysis. Each browser receives an opaque
+Secure/HttpOnly cookie selecting its own investigation library in Neon. Existing
+owner investigations remain in the owner namespace and are not accessible from
+visitor mode. Clearing cookies, changing browsers, or losing the cookie starts
+a new library; there is no account recovery or cross-device login. The cookie
+expires after 180 days. Keep a downloaded research brief for important work.
+
+The public instance shares a bounded FDA cache and allows one expensive analysis
+at a time, with 120 API requests per minute across the service. Busy requests get
+a retry message. Free compute can still run out of memory on larger training
+samples. Removing `VIGIL_PUBLIC_VISITORS` restores the password-protected owner
+workspace using the existing credentials. Visitor and owner data are retained.
+
+## Private owner deployment
 
 The selected setup is **Render Free + Neon Free**, with required password protection. React and the Python API run together on Render. Hosted investigations and revision history use Neon PostgreSQL so they survive the web server’s disposable filesystem. The local app keeps SQLite, and all original research tools remain available.
 

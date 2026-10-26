@@ -14,7 +14,7 @@ class PublicDemoTests(unittest.TestCase):
 
     def test_anonymous_read_and_mode(self):
         self.assertEqual(self.client.get('/healthz', base_url=self.origin).status_code, 200)
-        self.assertEqual(self.client.get('/api/workspace-mode', base_url=self.origin).json, {'public_demo':True})
+        self.assertEqual(self.client.get('/api/workspace-mode', base_url=self.origin).json, {'public_demo':True, 'public_visitors':False})
 
     def test_no_investigation_reads_or_writes_even_with_credentials(self):
         for path in ['/api/investigations','/api/investigations?id=secret','/api/investigations/history?id=secret']:

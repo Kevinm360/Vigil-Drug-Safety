@@ -56,6 +56,51 @@ class HostedDatabaseConfigurationTests(unittest.TestCase):
 
 @unittest.skipUnless(URL, "Set VIGIL_TEST_DATABASE_URL for the isolated PostgreSQL integration service.")
 class PostgresContracts(unittest.TestCase):
+    def test_public_browser_library_survives_an_app_restart(self):
+        with tempfile.TemporaryDirectory() as folder:
+            settings = {**SETTINGS, "VIGIL_PUBLIC_VISITORS": "1", "VIGIL_DATABASE_URL": URL,
+                        "VIGIL_REQUIRE_REMOTE_STORE": "1", "VIGIL_DATA_DIR": folder}
+            app = create_app(settings, DashboardService(storage_root=folder))
+            first, second = app.test_client(), app.test_client()
+            saved = first.post("/api/investigations/save", base_url=ORIGIN, json=DOCUMENT)
+            self.assertEqual(saved.status_code, 200)
+            identifier = saved.json["id"]
+            try:
+                self.assertEqual(second.get("/api/investigations?id=" + identifier, base_url=ORIGIN).status_code, 404)
+                reopened = create_app(settings, DashboardService(storage_root=folder)).test_client()
+                reopened.set_cookie("__Host-vigil-visitor", first.get_cookie("__Host-vigil-visitor", domain="vigil.example").value,
+                                    domain="vigil.example", secure=True)
+                self.assertEqual(reopened.get("/api/investigations?id=" + identifier, base_url=ORIGIN).json["notes"], DOCUMENT["notes"])
+            finally:
+                first.post("/api/investigations/delete", base_url=ORIGIN, json={"id": identifier, "revision": 1})
+
+    def test_legacy_owner_rows_remain_private_after_workspace_migration(self):
+        saved = self.create()
+        with self.store.connect() as conn:
+            conn.execute("ALTER TABLE vigil_investigations DROP COLUMN workspace_id")
+        self.store.initialize()
+        self.assertEqual(self.store.get(saved["id"])["notes"], DOCUMENT["notes"])
+        visitor = PostgresInvestigationStore(URL, validate_params, "test-visitor-migration")
+        self.assertNotIn(saved["id"], [row["id"] for row in visitor.list()])
+
+    def test_guest_namespaces_cannot_access_owner_or_other_guests(self):
+        first = PostgresInvestigationStore(URL, validate_params, "test-visitor-first")
+        second = PostgresInvestigationStore(URL, validate_params, "test-visitor-second")
+        saved = first.save(copy.deepcopy(DOCUMENT))
+        try:
+            self.assertNotIn(saved["id"], [row["id"] for row in self.store.list()])
+            self.assertNotIn(saved["id"], [row["id"] for row in second.list()])
+            for other in [self.store, second]:
+                for action in [lambda: other.get(saved["id"]), lambda: other.history(saved["id"]),
+                               lambda: other.delete(saved["id"], 1),
+                               lambda: other.save({**DOCUMENT, "id": saved["id"], "revision": 1})]:
+                    with self.assertRaises(InvestigationError) as error:
+                        action()
+                    self.assertEqual(error.exception.status, 404)
+            self.assertEqual(first.get(saved["id"])["notes"], DOCUMENT["notes"])
+        finally:
+            first.delete(saved["id"], 1)
+
     def setUp(self):
         self.store = PostgresInvestigationStore(URL, validate_params)
         self.store.initialize()
