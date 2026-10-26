@@ -15,6 +15,7 @@ _FILE_LOCKS_GUARD = threading.Lock()
 class CachedResponse:
     value: dict
     expires_at: float
+    created_at: float = 0
 
 
 class SQLiteResponseCache:
@@ -82,12 +83,12 @@ class SQLiteResponseCache:
                     connection.execute("DELETE FROM response_cache WHERE cache_key = ?", (key,))
                     return None
                 self.hits += 1
-                return CachedResponse(value, row[1])
+                return CachedResponse(value, row[1], row[2])
         except (sqlite3.Error, OSError):
             self.available = False
             return None
 
-    def put(self, key, value, ttl):
+    def put(self, key, value, ttl, *, created_at=None):
         try:
             payload = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
             size = len(payload.encode("utf-8"))
@@ -95,11 +96,12 @@ class SQLiteResponseCache:
                 return False
             with self.lock, closing(self._connect()) as connection, connection:
                 now = self.clock()
+                created = now if created_at is None else created_at
                 connection.execute("DELETE FROM response_cache WHERE expires_at <= ? OR created_at > ?", (now, now))
                 connection.execute("""INSERT INTO response_cache VALUES (?, ?, ?, ?, ?)
                     ON CONFLICT(cache_key) DO UPDATE SET payload=excluded.payload,
                     created_at=excluded.created_at, expires_at=excluded.expires_at, byte_count=excluded.byte_count""",
-                    (key, payload, now, now + ttl, size))
+                    (key, payload, created, created + ttl, size))
                 count, total = connection.execute("SELECT COUNT(*), COALESCE(SUM(byte_count), 0) FROM response_cache").fetchone()
                 while count > self.max_entries or total > self.max_bytes:
                     oldest = connection.execute("SELECT cache_key, byte_count FROM response_cache ORDER BY created_at, rowid LIMIT 1").fetchone()

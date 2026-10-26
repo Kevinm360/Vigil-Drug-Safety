@@ -1,103 +1,115 @@
-# Vigil · Side Effects Signal Monitor
+<p align="center">
+  <img src="docs/assets/readme-banner.svg" alt="Vigil — a closer look at drug safety data" width="100%" />
+</p>
 
-A React interface for the original FAERS signal dashboard, with a local Python API and the complete Streamlit app preserved.
+<p align="center">
+  Explore FDA reports, follow reaction patterns, and keep the evidence together.<br />
+  <em>Fewer spreadsheet tabs. More connecting the dots.</em>
+</p>
 
-The interface uses warm paper tones, editorial serif headings, thin rules, and an animated vertical line field inspired by AfterQuery. The animation uses original medical and data symbols, with a pause control and a static reduced-motion version. Every research tab also has an animated striped icon and a bottom color wash matched to its accent. Decorative motion pauses offscreen and when the tab is hidden. Charts use restrained, flat colors so the evidence remains readable.
+<p align="center">
+  <strong><a href="https://vigil-drug-safety.onrender.com/">Open Vigil ↗</a></strong>
+  &nbsp; · &nbsp;
+  <a href="docs/DEMO.md">Take the quick tour</a>
+  &nbsp; · &nbsp;
+  <a href="#run-it-yourself">Run locally</a>
+</p>
 
-![Vigil editorial dashboard preview](docs/preview-editorial-overview.png)
+<p align="center"><sub>Free hosting may need a minute to wake up. Relatable.</sub></p>
 
-The reaction network is an aligned relationship map with a count matrix, reaction search, source highlighting, sorting, density controls, and separate per-drug counts on selection. It starts with **Live openFDA / FAERS**. Set a drug and date range, then press **Apply**. The supplied synthetic archive remains available as an explicit alternative for offline interface exploration.
+![A quick Vigil walkthrough: search for a drug, inspect evidence, save an investigation, and export a brief](docs/demo-v1.gif)
 
-## Run
+### Pick a drug. Follow the evidence.
 
-From this project folder in PowerShell:
+Vigil brings live **openFDA / FAERS** data into one research workspace. FAERS is the [FDA Adverse Event Reporting System](https://open.fda.gov/apis/drug/event/): reports of adverse events and medication errors submitted to the FDA.
 
-```powershell
-.\start.ps1
-```
+The idea is to make a question like *“Why does this reaction stand out?”* easier to follow. Search a drug, choose a cohort, compare reporting patterns, and trace a reaction from its chart to the supporting reports. Save your notes alongside the filters so tomorrow-you can pick up the thread.
 
-Open **http://127.0.0.1:8766**. The launcher builds the React app and serves it with the API on one local port. It installs dependencies if the project environment is missing. Node.js 22+ and Python 3.12 or 3.13 are recommended.
+The project started in Streamlit and grew into a React app covering data retrieval, statistical screening, model evaluation, and deployment. The original app and pipeline are still included.
 
-To keep the app running after you close the terminal, use `.\start.ps1 -Background`. Stop that background app with `.\stop.ps1`. Use `-Port 8765` if you want to reuse a browser tab already pointing at port 8765. Background process details and logs stay in the ignored `.vigil-runtime/` directory.
-
-The subject and comparison fields provide a searchable dropdown of FDA brand and generic names, with debounced lookup, keyboard selection, and incremental browsing. Suggestions come from the FDA NDC directory independently of the active cohort; directory listings do not imply FDA approval. Browse results are bounded, and typing searches the directory more specifically. Manual drug-name entry remains available if suggestions cannot load. Archive mode lists only its available drugs.
-
-Applied cohort filters survive a reload within the same browser session. Earlier saved cohorts migrate once to FDA mode; subsequent explicit source choices are remembered. Closing the filter dialog discards its uncommitted edits. The main export button exports evidence from the current view; tables also provide their own filtered CSV exports. Browser storage contains only cohort settings, not narratives, reports, model outputs, or credentials.
-
-Manual setup:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-npm ci
-npm run build
-.\.venv\Scripts\python.exe backend/server.py --port 8766
-```
-
-The archive, signal statistics, and narrative API work with Python's standard library. Model training and the legacy dashboard require the Python packages above. Development: run the API on port 8765 and `npm run dev` in a second terminal; Vite proxies `/api` to 8765.
-
-## Explore
-
-| View | Available tools |
+| What you want to do | Where Vigil helps |
 | --- | --- |
-| Overview | Weekly trend, drug comparison, cohort metrics, computed evidence brief, reaction bars, network preview |
-| Reactions | Ranked bars, area-proportional treemap, comparison, sortable/searchable table |
-| Case reports | Real live FAERS samples or clearly labeled synthetic archive records, CSV export |
-| Signal explorer | PRR/ROR with 95% intervals, count/ratio scatter, volcano plot, rotatable 3D projection, flags, weekly bursts |
-| Severity | Live reported outcomes, demographics, and serious-reaction comparisons |
-| Network graph | Aligned drug–reaction map, count matrix, source highlighting, reaction search/sorting, selection, density controls |
-| Narrative lab | Text/CSV analysis, device narrative retrieval, keywords, clinical and negated phrase mentions, lexical sentiment, contrastive terms, exports |
-| Model studio | Adjustable training sample, Logistic Regression and XGBoost, paired full/reduced features, chronological held-out evaluation where feasible, ROC/PR curves, probability distributions, adjustable threshold/confusion matrix, coefficients, importances, proxy audit |
+| **Spot a pattern** | Weekly trends, drug comparisons, reaction maps, and interactive 3D signal plots. |
+| **Check the evidence** | PRR/ROR estimates with confidence intervals, case reports, severity, and demographics. |
+| **Keep your place** | Saved investigations, notes, revision history, CSV exports, and a downloadable research brief. |
+| **Try the models** | Logistic Regression and XGBoost, held-out evaluation, threshold controls, and a feature proxy audit. |
+| **Read between the lines** | Narrative keywords, phrase mentions, negation, and text/CSV analysis. |
 
-The complete original app remains available for its original Plotly 3D scatter, Three.js force graph, PyVis graph physics, and advanced Streamlit controls:
+**Try this first:** search **Metformin** → apply your dates → select a reaction → open its evidence drawer.
+
+<table>
+  <tr>
+    <td width="50%"><a href="docs/preview-evidence-drawer.png"><img src="docs/preview-evidence-drawer.png" alt="Reaction frequency chart with the evidence drawer showing counts and uncertainty" width="100%" /></a></td>
+    <td width="50%"><a href="docs/preview-3d-signal-axes.png"><img src="docs/preview-3d-signal-axes.png" alt="Interactive 3D signal plot with labeled axes and the underlying evidence table" width="100%" /></a></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Follow a reaction into its evidence.</sub></td>
+    <td align="center"><sub>Explore signals from another angle. Literally.</sub></td>
+  </tr>
+</table>
+
+### How the analysis works
+
+- **Signals come with context.** PRR and ROR compare reaction reporting with and without the selected drug. Report counts and confidence intervals stay visible so you can judge the strength and uncertainty of a pattern.
+- **Models get a proper check.** Logistic Regression and XGBoost classify reported seriousness using the same held-out records. Full and reduced feature sets help examine how administrative details might influence predictions.
+- **Text analysis stays inspectable.** TF-IDF keywords, phrase rules, and limited negation handling make it possible to see how narrative results were produced.
+
+#### What goes into a prediction?
+
+The seriousness classifiers learn from **15 report fields** in the full model and **6** in the reduced model. Their target is whether a submitted report is labeled serious.
+
+| Input group | Fields used | Reduced model |
+| --- | --- | --- |
+| **Patient details** | Age in years, weight in kilograms, and reported sex | Kept |
+| **Report contents** | Number of drugs and number of reactions listed | Kept |
+| **Administration route** | How the selected drug was administered | Kept |
+| **Drug-role coding** | Selected drug's reported role; counts of drugs marked suspect, concomitant, or interacting | Removed |
+| **Reporting context** | Reporter qualification; reporter, primary-source, and event countries; report type | Removed |
+
+The reduced model checks how performance changes when administrative reporting details are removed. Both versions use the same held-out records for comparison.
+
+**No peeking at the answer:** death, hospitalization, other direct seriousness outcomes, and reaction outcomes are excluded from the inputs. The seriousness flag is the target only. Raw drug names and reaction terms are also excluded. The [feature definitions and audit](backend/serious_outcome.py) spell out the exact fields.
+
+The engineering side includes cached FDA requests, separate visitor libraries, revision tracking, and Docker deployment. **Render + Neon** power the public app; the project also has a separate **AWS EC2 + Caddy HTTPS** deployment.
+
+### Run it yourself
+
+With **Node.js 22+** and **Python 3.12 or 3.13** installed, clone the release branch and launch from PowerShell:
 
 ```powershell
-.\.venv\Scripts\python.exe -m streamlit run app/streamlit_app.py
+git clone --branch codex/v1-release https://github.com/Kevinm360/Vigil-Drug-Safety.git
+cd Vigil-Drug-Safety
+.\scripts\start.ps1
 ```
 
-Untouched original sources are in `original_sources/`. Restoration details and the functionality matrix are in [docs/RESTORATION.md](docs/RESTORATION.md). The original screenshot, animation, and README are in `docs/reference/`.
+Open **http://127.0.0.1:8766**. The launcher handles the build and local dependencies.
 
-## Credentials
+<details>
+<summary><strong>API key &amp; hosting</strong></summary>
 
-The server reads `OPENFDA_API_KEY` from the environment or `.streamlit/secrets.toml`. The supplied key was restored only to that gitignored local file. Credentials never enter the React bundle. For a fresh installation, set an environment variable or create:
+Set your openFDA key on the server as `OPENFDA_API_KEY`, or in the ignored local `.streamlit/secrets.toml` file. Keep keys and database URLs out of Git.
 
-```toml
-OPENFDA_API_KEY = "your-openFDA-key"
-```
+The Render app supports public visitor workspaces: each browser gets its own saved investigation library. Clearing site cookies or changing browsers starts a new library. For setup and private owner access, see the [deployment guide](docs/DEPLOYMENT.md).
 
-Public requests are subject to openFDA authentication and rate limits. A failed live query displays its error and never silently substitutes synthetic data. FDA counts and aggregate responses are cached for five minutes; FDA drug-name lookups are cached for one day. A bounded SQLite cache in `.vigil-runtime/fda-cache.sqlite3` preserves these responses across restarts. Expired responses are never used as an offline fallback. Raw case reports, uploaded narratives, model outputs, and API keys are excluded from this database. If SQLite is unavailable, the app continues with memory caching and normal FDA requests. Uploaded narrative text is processed locally without persistence or transmission to a language-model service. The interface uses local system fonts and renders its decorative animation without external assets.
+The project has also been deployed on **AWS EC2 with Docker and Caddy HTTPS**. The public link above uses Render; the [AWS guide](docs/PUBLIC-DEMO.md) covers the separate EC2 setup.
 
-## AI and data reliability
+</details>
 
-- The supplied 2,000 reviews are synthetic text generated by the original ingestion pipeline. Their metrics are demonstrations, not clinical evidence. Cached legacy probabilities appear misaligned with labels and are retained only as original artifacts; the React API recomputes statistics from the CSV.
-- The review classifier now deduplicates normalized text before a fixed held-out split. TF-IDF and the classifier fit only training data. Synthetic keyword labels can still produce perfect held-out scores; this does not validate clinical performance.
-- Live seriousness models exclude direct outcome fields and compare full/reduced versions on identical held-out records. Threshold controls use actual held-out labels and probabilities. The sample is bounded and does not represent all FAERS reports.
-- Narrative analysis uses inspectable TF-IDF, phrase rules with a limited negation window, and a small sentiment lexicon. It is not a clinical language model or diagnostic system. The evidence brief is calculated from the displayed cohort.
-- Daily openFDA counts are aggregated to actual Monday-start weeks. Missing weeks are filled; partial final weeks are identified. Signal denominators use the same period/cohort, and rare zero cells receive continuity correction.
+<details>
+<summary><strong>Under the hood</strong></summary>
 
-FAERS reports cannot establish causation or incidence and should not determine an individual's treatment or medical risk. See the [FDA's dataset overview and limitations](https://open.fda.gov/apis/drug/event/).
+| Layer | Tools |
+| --- | --- |
+| Interface | React, Vite, Three.js |
+| API | Python, Flask, Gunicorn |
+| Analysis | scikit-learn, XGBoost, inspectable NLP rules |
+| Storage | SQLite locally; PostgreSQL / Neon when hosted |
+| Deployment | Docker, Render; AWS EC2 deployment documented |
 
-## Verification
+The original Streamlit app and Prefect/MLflow pipeline are preserved. See the [technical guide](docs/PROJECT-GUIDE.md), [restoration notes](docs/RESTORATION.md), and [verification notes](docs/RELEASE-v1.md).
 
-```powershell
-npm run build
-npm test
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
+</details>
 
-The regression suite checks query/cohort consistency, time aggregation, signal calculations and intervals, NLP negation, provenance, API validation, score alignment, held-out splitting, and alert filtering. Live smoke checks require network access and the configured openFDA key.
+---
 
-Verified during implementation: production build; 63 Python regression tests and eight frontend state/export/network tests; live FDA cohort totals matching weekly aggregation; all four models on real held-out reports; negation-aware narrative output; CSV export; mobile layout/navigation. A broad 1,000-report training query also passed using adaptive page sizes to recover oversized FDA responses. Any individual oversized record that must be omitted is disclosed in the returned sample metadata.
-
-Comparison requests expose availability for volume, reactions, and totals separately. An unavailable value remains unknown instead of appearing as zero; a successful empty response remains a genuine zero. Comparison data can still load when the subject drug has no matching reports. Narrative tables and exports retain every analyzed record within the accepted upload limit.
-
-Repeat a live check with `.\.venv\Scripts\python.exe tests/smoke_live.py --train 300 --device-narratives`.
-
-The original Prefect/MLflow workflow is retained separately. Install `requirements-pipeline.txt` to run `run_pipeline.py`. Scheduling and notifications have not been activated by the redesign.
-
-
-## SQLite cache
-
-The Python standard-library `sqlite3` module manages the local cache; no database service or new dependency is needed. It is limited to 512 entries and 32 MB of response payloads, with a 1 MB entry limit. Cache keys distinguish endpoint, query/cohort, and response type using a digest without the API credential. Expiry and age indexes support lookup and eviction, and short transactions use separate connections with per-file synchronization. Cache failures do not block FDA requests.
-
-Only public FDA aggregates, totals, and NDC name results are persisted. Count-only requests retain the total and discard their returned case record before caching. Live dashboards are assembled from the individual cached FDA responses so another dashboard cache does not extend their expiration. `/api/health` reports SQLite availability, fresh-entry counts, payload size, and cache hits for the current server process. The cache file and sidecar files are excluded from Git by `.vigil-runtime/`.
+**A signal is a reason to investigate, not a verdict.** FAERS reports do not establish causation or incidence. Model predictions describe report labels, not a person's medical risk. Synthetic archive data is labeled separately. This is a research project, not medical advice.

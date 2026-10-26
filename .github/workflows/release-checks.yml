@@ -1,0 +1,91 @@
+name: Release checks
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-ci-password
+          POSTGRES_DB: vigil_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      VIGIL_TEST_DATABASE_URL: postgresql://postgres:isolated-ci-password@127.0.0.1:5432/vigil_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: config/requirements/*.txt
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - run: python -m pip install -r config/requirements/local.txt
+      - run: python -m unittest discover -s tests -v
+  container:
+    runs-on: ubuntu-latest
+    env:
+      VIGIL_PUBLIC_ORIGIN: https://vigil.example
+      VIGIL_AUTH_USER: container-test
+      VIGIL_AUTH_PASSWORD: test-only-container-password-never-used-for-hosting
+      VIGIL_DATABASE_URL: postgresql://postgres:isolated-ci-password@postgres:5432/vigil_test?sslmode=disable
+      VIGIL_REQUIRE_REMOTE_STORE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: docker build -t vigil-release-check .
+      - run: docker network create vigil-release-check-net
+      - name: Start isolated database
+        run: >-
+          docker run -d --name postgres --network vigil-release-check-net
+          -e POSTGRES_PASSWORD=isolated-ci-password -e POSTGRES_DB=vigil_test
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 20
+          postgres:17-bookworm
+      - name: Wait for database
+        run: |
+          for attempt in $(seq 1 30); do
+            if docker exec postgres pg_isready -U postgres; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Start isolated private workspace
+        run: >-
+          docker run -d --name vigil-release-check -p 127.0.0.1:18766:10000
+          --network vigil-release-check-net
+          -e VIGIL_PUBLIC_ORIGIN -e VIGIL_AUTH_USER -e VIGIL_AUTH_PASSWORD
+          -e VIGIL_DATABASE_URL -e VIGIL_REQUIRE_REMOTE_STORE vigil-release-check
+      - run: python scripts/smoke_hosted.py --phase create
+      - run: docker rm -f vigil-release-check
+      - name: Recreate app with an empty filesystem
+        run: >-
+          docker run -d --name vigil-release-check -p 127.0.0.1:18766:10000
+          --network vigil-release-check-net
+          -e VIGIL_PUBLIC_ORIGIN -e VIGIL_AUTH_USER -e VIGIL_AUTH_PASSWORD
+          -e VIGIL_DATABASE_URL -e VIGIL_REQUIRE_REMOTE_STORE vigil-release-check
+      - run: python scripts/smoke_hosted.py --phase verify
+      - name: Clean up isolated container
+        if: always()
+        run: |
+          docker logs vigil-release-check || true
+          docker rm -f vigil-release-check || true
+          docker rm -fv postgres || true
+          docker network rm vigil-release-check-net || true

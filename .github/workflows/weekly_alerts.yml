@@ -18,7 +18,7 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-legacy.txt
+          pip install -r config/requirements/legacy.txt
 
       - name: Run weekly alerts
         env:
@@ -37,7 +37,7 @@ jobs:
           TOP_N_PER_DRUG: "15"
           SERIOUS_ONLY: "false"
           SEARCH_EXTRA: ""
-        run: python jobs/weekly_alerts.py
+        run: python legacy/jobs/weekly_alerts.py
 
       - name: Upload alert artifacts
         uses: actions/upload-artifact@v4

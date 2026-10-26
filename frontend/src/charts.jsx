@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import './charts.css';
 import ReactionNetwork from './ReactionNetwork.jsx';
+import {cubeProjection} from './signalProjection.js';
+import {SignalAxes,SignalAxisGuide} from './SignalAxes.jsx';
 
-const PALETTE = ['#477f79', '#8773a5', '#b77d59', '#6e8ba6', '#8a9a64', '#c2a675', '#9c839a'];
+const PALETTE = ['#548c84', '#8a7fa8', '#af765e', '#6e8ba6', '#8a9a64', '#b59a68', '#9c839a'];
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const finite = (value) => value !== null && value !== '' && Number.isFinite(Number(value));
 const list = (data) => Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : Array.isArray(data?.results) ? data.results : [];
@@ -118,17 +120,22 @@ export function TimeSeriesChart({ data, compareData, drug = 'Selected drug', com
       {main.length > 1 && <path className="chart-primary-line" d={path(main)} fill="none" stroke={PALETTE[0]} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />}
       <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="transparent" onPointerMove={(event) => { const bounds = event.currentTarget.ownerSVGElement.getBoundingClientRect(); const mouseX = (event.clientX - bounds.left) / bounds.width * W; const point = all.reduce((best, row) => Math.abs(x(row.dateObject) - mouseX) < Math.abs(x(best.dateObject) - mouseX) ? row : best, all[0]); const isMain = main.includes(point); onPoint(event, point, isMain ? drug : compareDrug, isMain ? PALETTE[0] : PALETTE[1]); }} />
       {[{ points: main, name: drug, color: PALETTE[0] }, { points: other, name: compareDrug, color: PALETTE[1] }].map((series) => series.points.map((row, index) => <circle key={`${series.name}-${index}`} cx={x(row.dateObject)} cy={y(row.value)} r={series.points.length === 1 ? 5 : 8} fill={series.points.length === 1 ? series.color : 'transparent'} className="chart-focus-point" tabIndex={0} role="graphics-symbol" aria-label={`${series.name}, ${row.dateObject.toLocaleDateString(undefined, { timeZone: 'UTC' })}, ${fmt(row.value)} ${recordLabel.toLowerCase()}`} onFocus={(event) => onPoint(event, row, series.name, series.color)} onBlur={() => { tooltip.hide(); setActive(null); }} onPointerMove={(event) => onPoint(event, row, series.name, series.color)} />))}
-      {active && <g pointerEvents="none"><line x1={x(active.row.dateObject)} x2={x(active.row.dateObject)} y1={T} y2={H - B} stroke={active.color} strokeOpacity=".4" strokeDasharray="4 5" /><circle cx={x(active.row.dateObject)} cy={y(active.row.value)} r="11" fill={active.color} fillOpacity=".13" /><circle cx={x(active.row.dateObject)} cy={y(active.row.value)} r="5" fill="#f7f8f2" stroke={active.color} strokeWidth="2.5" /></g>}
+      {active && <g pointerEvents="none"><line x1={x(active.row.dateObject)} x2={x(active.row.dateObject)} y1={T} y2={H - B} stroke={active.color} strokeOpacity=".4" strokeDasharray="4 5" /><circle cx={x(active.row.dateObject)} cy={y(active.row.value)} r="11" fill={active.color} fillOpacity=".13" /><circle cx={x(active.row.dateObject)} cy={y(active.row.value)} r="5" fill="var(--surface)" stroke={active.color} strokeWidth="2.5" /></g>}
     </svg>
     <Legend items={[{ label: drug, color: PALETTE[0] }, ...(other.length ? [{ label: compareDrug, color: PALETTE[1] }] : [])]} note={`${recordLabel} by date · hover or focus for detail`} />
     {tooltip.tooltip}
   </div>;
 }
 
-export function HorizontalBars({ data, valueKey = 'count', labelKey = 'reaction', color = PALETTE[0], valueLabel, showComparison, compareLabel = 'Comparison' }) {
+function reactionInteraction(onSelect,value,selected){
+  if(!onSelect)return {};
+  return {role:'button','aria-pressed':String(value||'').toUpperCase()===selected,onClick:()=>onSelect(value),onKeyDownCapture:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onSelect(value)}}};
+}
+
+export function HorizontalBars({ onSelect, selectedReaction='', data, valueKey = 'count', labelKey = 'reaction', color = PALETTE[0], valueLabel, showComparison, compareLabel = 'Comparison', emptyMessage = 'No reactions match this selection.' }) {
   const tooltip = useTooltip();
   const rows = list(data).filter((row) => finite(row[valueKey] ?? row.count ?? row.reports ?? row.a));
-  if (!rows.length) return <EmptyChart message="No reactions match this selection." />;
+  if (!rows.length) return <EmptyChart message={emptyMessage} />;
   const compare = showComparison ?? rows.some((row) => number(row.compare_reports) > 0);
   const max = Math.max(0, ...rows.map((row) => number(row[valueKey] ?? row.count ?? row.reports ?? row.a)), ...(compare ? rows.map((row) => number(row.compare_reports)) : [])) || 1;
   const values = rows.map((row) => number(row[valueKey] ?? row.count ?? row.reports ?? row.a));
@@ -137,7 +144,7 @@ export function HorizontalBars({ data, valueKey = 'count', labelKey = 'reaction'
   const total = values.reduce((sum, value) => sum + value, 0);
   return <div className="chart-shell horizontal-bars" ref={tooltip.ref}>
     <div className="bar-column-head"><span>{labelKey === 'reaction' ? 'Reaction' : 'Term / feature'}</span><span>{heading}</span></div>
-    {rows.map((row, index) => { const value = number(row[valueKey] ?? row.count ?? row.reports ?? row.a); const name = label(row[labelKey] ?? row.label ?? row.name); const comparison = compare && finite(row.compare_reports); return <div className="horizontal-bar-row" key={`${name}-${index}`} tabIndex={0} aria-label={`${name}: ${fmt(value, decimals)}${comparison ? `, ${compareLabel} ${fmt(row.compare_reports)}` : ''}`} {...tooltip.bind(name, valueKey === 'prr' ? chartRows(row) : [[heading, fmt(value, decimals)], ...(finite(row.coefficient) ? [['Signed coefficient', fmt(row.coefficient, 4)]] : []), ...(comparison ? [[`${compareLabel} ${heading.toLowerCase()}`, fmt(row.compare_reports)]] : []), ...(!decimals ? [['Share of displayed reactions', `${fmt(total ? value / total * 100 : 0, 1)}%`]] : [])], color)}>
+    {rows.map((row, index) => { const value = number(row[valueKey] ?? row.count ?? row.reports ?? row.a); const name = label(row[labelKey] ?? row.label ?? row.name); const comparison = compare && finite(row.compare_reports); return <div className="horizontal-bar-row" {...reactionInteraction(onSelect,row[labelKey],selectedReaction)} key={`${name}-${index}`} tabIndex={0} aria-label={`${name}: ${fmt(value, decimals)}${comparison ? `, ${compareLabel} ${fmt(row.compare_reports)}` : ''}`} {...tooltip.bind(name, valueKey === 'prr' ? chartRows(row) : [[heading, fmt(value, decimals)], ...(finite(row.coefficient) ? [['Signed coefficient', fmt(row.coefficient, 4)]] : []), ...(comparison ? [[`${compareLabel} ${heading.toLowerCase()}`, fmt(row.compare_reports)]] : []), ...(!decimals ? [['Share of displayed reactions', `${fmt(total ? value / total * 100 : 0, 1)}%`]] : [])], color)}>
       <div className="horizontal-bar-label"><span className="bar-rank">{String(index + 1).padStart(2, '0')}</span><span>{name}</span></div>
       <div className="horizontal-bar-track"><span className="horizontal-bar-fill" style={{ width: `${Math.max(0, value) / max * 100}%`, minWidth: value > 0 ? 2 : 0, '--bar-color': color }} />{comparison && <span className="horizontal-bar-comparison" style={{ width: `${Math.max(0, number(row.compare_reports)) / max * 100}%` }} />}</div>
       <b>{fmt(value, decimals)}</b>
@@ -154,14 +161,14 @@ function logPFromChiSquare(value) {
   return Math.max(0, -(Math.log(t) + exponent) / Math.LN10);
 }
 
-export function SignalPlot({ data, recordLabel = 'Reports' }) {
+export function SignalPlot({ onSelect, selectedReaction='', data, recordLabel = 'Reports' }) {
   const tooltip = useTooltip();
   const [mode, setMode] = useState('volume');
   const [angle, setAngle] = useState(-.58);
   const drag = useRef(null);
   const rows = list(data).filter((row) => finite(row.prr) && number(row.prr) > 0).map((row) => ({ ...row, volume: number(row.a ?? row.count ?? row.reports), logPRR: Math.log2(number(row.prr)), significance: finite(row.p_value ?? row.p) ? -Math.log10(Math.max(Number.MIN_VALUE, number(row.p_value ?? row.p))) : logPFromChiSquare(row.chi2) }));
   if (!rows.length) return <EmptyChart message="No disproportionality results are available yet." />;
-  const W = Math.max(320, tooltip.width), H = 365, L = 66, R = 25, T = 20, B = 58;
+  const W = Math.max(320, tooltip.width), H = mode==='cube'?(W<500?360:440):365, L = 66, R = 25, T = 20, B = 58;
   const volumeMax = Math.max(3, ...rows.map((row) => row.volume)) * 1.1;
   const prrMax = Math.max(3, ...rows.map((row) => number(row.prr))) * 1.1;
   const logMin = Math.min(-1, ...rows.map((row) => row.logPRR)) - .3;
@@ -174,29 +181,26 @@ export function SignalPlot({ data, recordLabel = 'Reports' }) {
   const xTicks = Array.from({ length: 6 }, (_, index) => ({ value: xMin + (xMax - xMin) * index / 5, label: fmt(xMin + (xMax - xMin) * index / 5, mode === 'volume' && volumeMax >= 10 ? 0 : 1) }));
   const yTicks = Array.from({ length: 5 }, (_, index) => ({ value: yMax * index / 4, label: fmt(yMax * index / 4, 1) }));
   const xThreshold = mode === 'volume' ? 3 : 1, yThreshold = mode === 'volume' ? 2 : logPFromChiSquare(4);
-  const projected = (vx, vy, vz) => {
-    const scale = Math.min(1, (W - 55) / 550);
-    const ax = (vx - .5) * 400 * scale, ay = (vy - .5) * 260, az = (vz - .5) * 260 * scale;
-    return [W / 2 + Math.cos(angle) * ax + Math.sin(angle) * az, H / 2 + ay * -.78 + (Math.sin(angle) * ax - Math.cos(angle) * az) * .38];
-  };
-  const cubeCorners = Array.from({ length: 8 }, (_, index) => projected(index & 1 ? 1 : 0, index & 2 ? 1 : 0, index & 4 ? 1 : 0));
+  const {project:projected,corners:cubeCorners}=cubeProjection(angle,W,H);
   const cubeEdges = [[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
   const zMax = Math.max(1, ...rows.map((row) => Math.log10(row.volume + 1)));
   return <div ref={tooltip.ref} className="chart-shell signal-chart">
-    <div className="chart-controls"><div className="chart-segmented" aria-label="Signal visualization">{[['volume', 'Co-occurrences'], ['volcano', 'Volcano'], ['cube', '3D signals']].map(([value, text]) => <button key={value} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => { setMode(value); tooltip.hide(); }}>{text}</button>)}</div>{mode === 'cube' && <button className="chart-text-button" onClick={() => setAngle((value) => value + Math.PI / 6)} aria-label="Rotate 3D signals by 30 degrees">Rotate ↻</button>}</div>
-    <svg className={`chart-svg ${mode === 'cube' ? 'chart-svg-rotatable' : ''}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={mode === 'volume' ? `Scatter plot of ${recordLabel.toLowerCase()} with drug–reaction co-occurrences against proportional reporting ratios` : mode === 'volcano' ? 'Volcano plot of log base 2 proportional reporting ratios against negative log base 10 p-values' : `Rotatable three dimensional projection of reporting ratio, significance, and ${recordLabel.toLowerCase()} volume`} onPointerDown={(event) => { if (mode === 'cube') { drag.current = { x: event.clientX, angle }; event.currentTarget.setPointerCapture(event.pointerId); } }} onPointerMove={(event) => { if (drag.current && mode === 'cube') setAngle(drag.current.angle + (event.clientX - drag.current.x) * .008); }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
+    <div className="chart-controls"><div className="chart-segmented" aria-label="Signal visualization">{[['volume', 'Co-occurrences'], ['volcano', 'Volcano'], ['cube', '3D signals']].map(([value, text]) => <button key={value} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => { setMode(value); tooltip.hide(); }}>{text}</button>)}</div>{mode === 'cube' && <div className="cube-buttons"><button className="chart-text-button" onClick={() => {setAngle(-.58);tooltip.hide()}} aria-label="Reset 3D signal view">Reset view</button><button className="chart-text-button" onClick={() => setAngle((value) => value + Math.PI / 6)} aria-label="Rotate 3D signals by 30 degrees">Rotate ↻</button></div>}</div>
+    {mode==='cube'&&<SignalAxisGuide recordLabel={recordLabel} angle={angle}/>}
+    <svg className={`chart-svg ${mode === 'cube' ? 'chart-svg-rotatable' : ''}`} viewBox={`0 0 ${W} ${H}`} role={onSelect?'group':'img'} aria-label={mode === 'volume' ? `Scatter plot of ${recordLabel.toLowerCase()} with drug–reaction co-occurrences against proportional reporting ratios` : mode === 'volcano' ? 'Volcano plot of log base 2 proportional reporting ratios against negative log base 10 p-values' : `Rotatable three dimensional projection of reporting ratio, significance, and ${recordLabel.toLowerCase()} volume`} onPointerDown={(event) => { if (mode === 'cube' && !(onSelect && event.target.closest('.chart-point'))) { drag.current = { x: event.clientX, angle }; event.currentTarget.setPointerCapture(event.pointerId); } }} onPointerMove={(event) => { if (drag.current && mode === 'cube') setAngle(drag.current.angle + (event.clientX - drag.current.x) * .008); }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
       <title>{mode === 'cube' ? 'Drag horizontally or use Rotate to turn the projected cube.' : 'Focus a reaction point to inspect its signal statistics.'}</title>
       {mode !== 'cube' ? <>
         <rect x={x(xThreshold)} y={T} width={Math.max(0, W - R - x(xThreshold))} height={Math.max(0, y(yThreshold) - T)} fill={PALETTE[1]} opacity=".035" />
         <Grid width={W} height={H} left={L} right={R} top={T} bottom={B} xTicks={xTicks} yTicks={yTicks} x={x} y={y} xLabel={mode === 'volume' ? `${recordLabel} with drug + reaction (a)` : 'log₂ proportional reporting ratio (PRR)'} yLabel={mode === 'volume' ? 'Proportional reporting ratio' : '−log₁₀ p-value'} />
         <line x1={x(xThreshold)} x2={x(xThreshold)} y1={T} y2={H - B} stroke={PALETTE[1]} strokeOpacity=".4" strokeDasharray="5 5" />
         <line x1={L} x2={W - R} y1={y(yThreshold)} y2={y(yThreshold)} stroke={PALETTE[1]} strokeOpacity=".4" strokeDasharray="5 5" />
-        {rows.map((row, index) => <circle key={`${row.reaction}-${index}`} cx={x(mode === 'volume' ? row.volume : row.logPRR)} cy={y(mode === 'volume' ? number(row.prr) : row.significance)} r={flagged(row) ? 5.5 : 4} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity={flagged(row) ? '.85' : '.55'} stroke={flagged(row) ? '#8773a5' : '#477f79'} strokeWidth=".8" className="chart-point" tabIndex={0} role="graphics-symbol" aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}${flagged(row) ? ', meets screening rule' : ''}`} {...tooltip.bind(label(row.reaction), chartRows(row, recordLabel), flagged(row) ? PALETTE[1] : PALETTE[0])} />)}
+        {rows.map((row, index) => <circle key={`${row.reaction}-${index}`} cx={x(mode === 'volume' ? row.volume : row.logPRR)} cy={y(mode === 'volume' ? number(row.prr) : row.significance)} r={flagged(row) ? 5.5 : 4} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity={flagged(row) ? '.85' : '.55'} stroke={flagged(row) ? PALETTE[1] : PALETTE[0]} strokeWidth=".8" className="chart-point" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}${flagged(row) ? ', meets screening rule' : ''}`} {...tooltip.bind(label(row.reaction), chartRows(row, recordLabel), flagged(row) ? PALETTE[1] : PALETTE[0])} />)}
       </> : <>
-        {cubeEdges.map(([a, b], index) => <line key={index} x1={cubeCorners[a][0]} y1={cubeCorners[a][1]} x2={cubeCorners[b][0]} y2={cubeCorners[b][1]} stroke="#8ea7bf" strokeOpacity=".22" strokeDasharray={index < 3 ? undefined : '3 5'} />)}
-        {[0,.25,.5,.75,1].map((level) => { const p1 = projected(0,0,level), p2 = projected(1,0,level), p3 = projected(1,1,level); return <path key={level} d={`M${p1}L${p2}L${p3}`} fill="none" stroke="#6d87a2" strokeOpacity=".12" />; })}
-        {rows.map((row, index) => { const p = projected((row.logPRR - logMin) / (logMax - logMin), row.significance / sigMax, Math.log10(row.volume + 1) / zMax); return <circle key={`${row.reaction}-${index}`} cx={p[0]} cy={p[1]} r={3.5 + Math.log10(row.volume + 1)} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity=".8" stroke={flagged(row) ? '#8773a5' : '#477f79'} strokeWidth=".7" className="chart-point" tabIndex={0} role="graphics-symbol" aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}, chi-square ${fmt(row.chi2, 2)}`} {...tooltip.bind(label(row.reaction), chartRows(row, recordLabel), flagged(row) ? PALETTE[1] : PALETTE[0])} />; })}
-        <text x={W / 2} y={H - 10} textAnchor="middle" className="chart-cube-label">{W < 500 ? 'X · log₂(PRR)  Y · −log₁₀(p)  Z · log₁₀(a+1)' : `X · log₂(PRR)　 Y · −log₁₀(p)　 Z · log₁₀(${recordLabel.toLowerCase()} + 1)`}</text>
+        {cubeEdges.map(([a, b], index) => <line key={index} x1={cubeCorners[a][0]} y1={cubeCorners[a][1]} x2={cubeCorners[b][0]} y2={cubeCorners[b][1]} stroke="#8d9c80" strokeOpacity=".34" strokeDasharray={index < 3 ? undefined : '3 5'} />)}
+        {[0,.25,.5,.75,1].map((level) => { const p1 = projected(0,0,level), p2 = projected(1,0,level), p3 = projected(1,1,level); return <path key={level} d={`M${p1}L${p2}L${p3}`} fill="none" stroke="#839476" strokeOpacity=".22" />; })}
+        <SignalAxes project={projected} width={W} height={H} logMin={logMin} logMax={logMax} sigMax={sigMax} zMax={zMax}/>
+        {rows.map((row, index) => { const p = projected((row.logPRR - logMin) / (logMax - logMin), row.significance / sigMax, Math.log10(row.volume + 1) / zMax); return <circle key={`${row.reaction}-${index}`} cx={p[0]} cy={p[1]} r={3.5 + Math.log10(row.volume + 1)} fill={flagged(row) ? PALETTE[1] : PALETTE[0]} fillOpacity=".8" stroke={flagged(row) ? PALETTE[1] : PALETTE[0]} strokeWidth=".7" className="chart-point" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.reaction}, ${fmt(row.volume)} ${recordLabel.toLowerCase()}, PRR ${fmt(row.prr, 2)}, chi-square ${fmt(row.chi2, 2)}`} {...tooltip.bind(label(row.reaction), [...chartRows(row, recordLabel),['X · log₂(PRR)',fmt(row.logPRR,2)],['Y · −log₁₀(p)',fmt(row.significance,2)],['Z · log₁₀(a + 1)',fmt(Math.log10(row.volume+1),2)]], flagged(row) ? PALETTE[1] : PALETTE[0])} />; })}
+        <text x={W / 2} y={H - 10} textAnchor="middle" className="chart-cube-label">{W<500?'Axis values use the scales above':'Labeled axes rotate with the view · axis values use the scales above'}</text>
       </>}
     </svg>
     <Legend items={[{ label: 'Meets screening rule', color: PALETTE[1] }, { label: 'Other reactions', color: PALETTE[0] }]} note={mode === 'cube' ? 'Drag to rotate · focus points for detail' : 'PRR ≥ 2 · χ² ≥ 4 · a ≥ 3'} />
@@ -205,13 +209,13 @@ export function SignalPlot({ data, recordLabel = 'Reports' }) {
   </div>;
 }
 
-export function DonutChart({ data, labelKey = 'label', valueKey = 'count' }) {
+export function DonutChart({ data, labelKey = 'label', valueKey = 'count', emptyMessage = 'No outcome breakdown is available for this selection.' }) {
   const tooltip = useTooltip();
   const donutId = useId().replaceAll(':', '');
   const [active, setActive] = useState(null);
   const rows = list(data).map((row) => ({ ...row, name: label(row[labelKey] ?? row.name ?? row.outcome ?? row.seriousness ?? row.category), value: number(row[valueKey] ?? row.reports ?? row.value) })).filter((row) => row.value > 0);
   const total = rows.reduce((sum, row) => sum + row.value, 0);
-  if (!total) return <EmptyChart message="No outcome breakdown is available for this selection." />;
+  if (!total) return <EmptyChart message={emptyMessage} />;
   const radius = 77, circumference = 2 * Math.PI * radius;
   let offset = 0;
   return <div className="chart-shell donut-chart" ref={tooltip.ref}>
@@ -246,7 +250,7 @@ function splitTreemap(rows, x, y, width, height) {
     : [...splitTreemap(rows.slice(0, split), x, y, width, height * fraction), ...splitTreemap(rows.slice(split), x, y + height * fraction, width, height * (1 - fraction))];
 }
 
-export function TreemapChart({ data, labelKey = 'reaction', valueKey = 'count', recordLabel = 'Reports' }) {
+export function TreemapChart({ onSelect, selectedReaction='', data, labelKey = 'reaction', valueKey = 'count', recordLabel = 'Reports' }) {
   const tooltip = useTooltip();
   const treemapId = useId().replaceAll(':', '');
   const rows = list(data).map((row, index) => ({ ...row, name: label(row[labelKey] ?? row.label ?? row.name), value: number(row[valueKey] ?? row.reports ?? row.a), color: PALETTE[index % PALETTE.length] })).filter((row) => row.value > 0).sort((a, b) => b.value - a.value);
@@ -255,10 +259,10 @@ export function TreemapChart({ data, labelKey = 'reaction', valueKey = 'count', 
   const total = rows.reduce((sum, row) => sum + row.value, 0);
   const cells = splitTreemap(rows, 0, 0, W, H);
   return <div className="chart-shell treemap-chart" ref={tooltip.ref}>
-    <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Treemap of reaction counts from ${recordLabel.toLowerCase()}. Each reaction's area reflects its share of displayed mentions.`}><title>Reaction volume treemap. Focus a tile to inspect its full reaction name and count.</title><defs>{PALETTE.map((color, index) => <linearGradient key={color} id={`${treemapId}-${index}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={color} stopOpacity=".23" /><stop offset="100%" stopColor={color} stopOpacity=".045" /></linearGradient>)}</defs>{cells.map((cell, index) => {
+    <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} role={onSelect?'group':'img'} aria-label={`Treemap of reaction counts from ${recordLabel.toLowerCase()}. Each reaction's area reflects its share of displayed mentions.`}><title>Reaction volume treemap. Focus a tile to inspect its full reaction name and count.</title><defs>{PALETTE.map((color, index) => <linearGradient key={color} id={`${treemapId}-${index}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={color} stopOpacity=".23" /><stop offset="100%" stopColor={color} stopOpacity=".045" /></linearGradient>)}</defs>{cells.map((cell, index) => {
       const showLabel = cell.width > 75 && cell.height > 48;
       const available = Math.max(6, Math.floor((cell.width - 24) / 6.2));
-      return <g key={`${cell.name}-${index}`} className="treemap-cell" tabIndex={0} role="graphics-symbol" aria-label={`${cell.name}, ${fmt(cell.value)} ${recordLabel.toLowerCase()}, ${fmt(cell.value / total * 100, 1)} percent of displayed reactions`} {...tooltip.bind(cell.name, [[recordLabel, fmt(cell.value)], ['Share of displayed reactions', `${fmt(cell.value / total * 100, 1)}%`]], cell.color)}>
+      return <g key={`${cell.name}-${index}`} className="treemap-cell" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,cell[labelKey]??cell.name,selectedReaction)} aria-label={`${cell.name}, ${fmt(cell.value)} ${recordLabel.toLowerCase()}, ${fmt(cell.value / total * 100, 1)} percent of displayed reactions`} {...tooltip.bind(cell.name, [[recordLabel, fmt(cell.value)], ['Share of displayed reactions', `${fmt(cell.value / total * 100, 1)}%`]], cell.color)}>
         <rect x={cell.x + 2} y={cell.y + 2} width={Math.max(0, cell.width - 4)} height={Math.max(0, cell.height - 4)} rx="2" fill={`url(#${treemapId}-${PALETTE.indexOf(cell.color)})`} stroke={cell.color} strokeOpacity=".33" />
         {showLabel && <><rect x={cell.x + 13} y={cell.y + 14} width="14" height="2" rx="1" fill={cell.color} /><text x={cell.x + 13} y={cell.y + 35} className="treemap-label">{short(cell.name, available)}</text>{cell.height > 69 && <text x={cell.x + 13} y={cell.y + 57} className="treemap-value">{fmt(cell.value)}<tspan className="treemap-share">　{fmt(cell.value / total * 100, 1)}%</tspan></text>}</>}
       </g>;
@@ -303,7 +307,7 @@ export function ModelCurves({ curves, kind = 'roc' }) {
 const ratioText = (value) => !finite(value) ? 'Unavailable' : number(value) > 0 && (number(value) < .01 || number(value) >= 10000) ? Number(value).toExponential(1) : fmt(value, number(value) < .1 ? 3 : 2);
 const proportionText = (value) => finite(value) && number(value) >= 0 && number(value) <= 1 ? `${fmt(number(value) * 100, 1)}%` : 'Unavailable';
 
-export function SeverityPlot({ data }) {
+export function SeverityPlot({ data, onSelect, selectedReaction='' }) {
   const tooltip = useTooltip();
   const [mode, setMode] = useState('forest');
   const [topN, setTopN] = useState(10);
@@ -346,16 +350,16 @@ export function SeverityPlot({ data }) {
   return <div ref={tooltip.ref} className="chart-shell severity-plot">
     <div className="chart-controls"><div className="chart-segmented" aria-label="Seriousness reporting visualization">{[['forest', 'Relative proportion + CI'], ['scatter', 'Proportion comparison']].map(([value, text]) => <button key={value} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value} onClick={() => { setMode(value); tooltip.hide(); }}>{text}</button>)}</div>{mode === 'forest' && <label className="chart-density-label severity-top-label">Reactions<select aria-label="Number of seriousness reporting proportions" value={topN} onChange={(event) => { setTopN(Number(event.target.value)); tooltip.hide(); }}><option value="10">Top 10</option><option value="20">Top 20</option><option value={Math.max(21, ratios.length)}>All · {ratios.length}</option></select></label>}</div>
     {mode === 'forest' ? visible.length ? <>
-      <svg className="chart-svg severity-forest" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Relative seriousness reporting proportion forest plot with 95 percent confidence intervals for ${visible.length} reactions, sorted by decreasing ratio. A ratio of 1 indicates equal recorded proportions.`}>
+      <svg className="chart-svg severity-forest" viewBox={`0 0 ${W} ${H}`} role={onSelect?'group':'img'} aria-label={`Relative seriousness reporting proportion forest plot with 95 percent confidence intervals for ${visible.length} reactions, sorted by decreasing ratio. A ratio of 1 indicates equal recorded proportions.`}>
         <title>Relative seriousness reporting proportion on a logarithmic axis. Focus a reaction row to inspect the estimate, interval and underlying counts.</title>
         <text x="0" y="15" className="severity-column-label">REACTION</text><text x={W - R + 12} y="15" className="severity-column-label">RATIO · 95% CI</text>
         {powers.map((power) => <g key={power} className="chart-grid"><line x1={x(2 ** power)} x2={x(2 ** power)} y1="27" y2={H - 53} strokeDasharray={power === 0 ? '4 4' : undefined} style={{ strokeOpacity: power === 0 ? .5 : .1, stroke: power === 0 ? '#becfe1' : undefined }} /><text x={x(2 ** power)} y={H - 32} textAnchor="middle">{ratioText(2 ** power)}</text></g>)}
-        {visible.map((row, index) => { const cy = T + index * rowHeight + 5; const color = intervalColor(row); const labelLength = Math.max(8, Math.floor((L - 14) / 6)); return <g key={`${row.name}-${index}`} className="severity-forest-row" tabIndex={0} role="graphics-symbol" aria-label={`${row.name}, relative seriousness reporting proportion ${ratioText(row.rr)}, ${row.validCI ? `95 percent confidence interval ${ratioText(row.low)} to ${ratioText(row.high)}` : 'confidence interval unavailable'}`} {...tooltip.bind(row.name, details(row), color)}>
+        {visible.map((row, index) => { const cy = T + index * rowHeight + 5; const color = intervalColor(row); const labelLength = Math.max(8, Math.floor((L - 14) / 6)); return <g key={`${row.name}-${index}`} className="severity-forest-row" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.name}, relative seriousness reporting proportion ${ratioText(row.rr)}, ${row.validCI ? `95 percent confidence interval ${ratioText(row.low)} to ${ratioText(row.high)}` : 'confidence interval unavailable'}`} {...tooltip.bind(row.name, details(row), color)}>
           <rect className="severity-row-hit" x="0" y={cy - 20} width={W} height={rowHeight - 1} fill="transparent" rx="5" />
           <line x1="0" x2={W} y1={cy + 26} y2={cy + 26} stroke="#98b6ce" strokeOpacity=".06" />
           <text x="0" y={cy + 3} className="severity-reaction-label">{short(row.name, labelLength)}</text>
           {row.validCI && <g stroke={color} strokeWidth="1.7"><line x1={x(row.low)} x2={x(row.high)} y1={cy} y2={cy} strokeOpacity=".8" />{row.low > 0 ? <line x1={x(row.low)} x2={x(row.low)} y1={cy - 4} y2={cy + 4} /> : <path d={`M${L + 7},${cy - 4}L${L + 2},${cy}L${L + 7},${cy + 4}`} fill="none" />}<line x1={x(row.high)} x2={x(row.high)} y1={cy - 4} y2={cy + 4} /></g>}
-          {row.rr > 0 ? <rect x={x(row.rr) - 4} y={cy - 4} width="8" height="8" rx="1.6" fill={color} stroke="#dff4fc" strokeOpacity=".5" /> : <path d={`M${L + 2},${cy - 5}l5,5 -5,5 -5,-5z`} fill="#f7f8f2" stroke={color} strokeWidth="1.5" />}
+          {row.rr > 0 ? <rect x={x(row.rr) - 4} y={cy - 4} width="8" height="8" rx="1.6" fill={color} stroke="#dff4fc" strokeOpacity=".5" /> : <path d={`M${L + 2},${cy - 5}l5,5 -5,5 -5,-5z`} fill="var(--surface)" stroke={color} strokeWidth="1.5" />}
           <text x={W - R + 12} y={cy - 2} className="severity-estimate">{ratioText(row.rr)}{row.rr === 0 ? '*' : ''}</text><text x={W - R + 12} y={cy + 13} className="severity-interval">{row.validCI ? `${ratioText(row.low)}–${ratioText(row.high)}` : 'CI unavailable'}</text>
         </g>; })}
         <text x={(L + W - R) / 2} y={H - 8} textAnchor="middle" className="severity-axis-label">{W < 500 ? 'Relative proportion · log scale' : 'Relative seriousness reporting proportion · log scale'}</text>
@@ -363,10 +367,10 @@ export function SeverityPlot({ data }) {
       <Legend items={[{ label: 'CI above 1', color: PALETTE[1] }, { label: 'CI below 1', color: PALETTE[2] }, { label: 'CI includes 1 / unavailable', color: PALETTE[0] }]} note={`Top ${visible.length} of ${ratios.length} finite ratios`} />
       {(zeroBoundary || unavailableCI > 0 || rows.length > ratios.length) && <p className="chart-method-note">{zeroBoundary && 'Zero estimates and zero lower bounds appear at the left boundary; zero has no logarithmic position. '}{unavailableCI > 0 && `${unavailableCI} displayed ${unavailableCI === 1 ? 'interval is' : 'intervals are'} unavailable or inconsistent; only the estimate is shown. `}{rows.length > ratios.length && `${rows.length - ratios.length} reactions have no finite ratio; inspect their available counts in the table.`}</p>}
     </> : <EmptyChart message="No finite relative seriousness reporting proportions are available. Try the proportion comparison view." /> : scatterRows.length ? <>
-      <svg className="chart-svg" viewBox={`0 0 ${W} ${S}`} role="img" aria-label="Recorded serious proportion among selected drug reports compared with the corresponding background reports. The diagonal marks equal proportions."><title>Proportion comparison. Each point is a reaction; point size reflects its report count. Focus points for counts and uncertainty.</title>
+      <svg className="chart-svg" viewBox={`0 0 ${W} ${S}`} role={onSelect?'group':'img'} aria-label="Recorded serious proportion among selected drug reports compared with the corresponding background reports. The diagonal marks equal proportions."><title>Proportion comparison. Each point is a reaction; point size reflects its report count. Focus points for counts and uncertainty.</title>
         <Grid width={W} height={S} left={SL} right={SR} top={ST} bottom={SB} xTicks={ticks} yTicks={ticks} x={sx} y={sy} xLabel="Background reports · serious proportion" yLabel="Drug reports · serious proportion" />
         <line x1={sx(0)} x2={sx(1)} y1={sy(0)} y2={sy(1)} stroke="#b3c5d6" strokeOpacity=".4" strokeDasharray="5 5" />
-        {scatterRows.map((row, index) => { const color = number(row.rate_drug) > number(row.rate_bg) ? PALETTE[1] : PALETTE[0]; return <circle key={`${row.name}-${index}`} cx={sx(row.rate_bg)} cy={sy(row.rate_drug)} r={4 + Math.sqrt(number(row.reports) / maxReports) * 7} fill={color} fillOpacity=".5" stroke={color} strokeWidth="1" className="chart-point" tabIndex={0} role="graphics-symbol" aria-label={`${row.name}, drug reports ${proportionText(row.rate_drug)} serious, background reports ${proportionText(row.rate_bg)} serious, ${fmt(row.reports)} reports`} {...tooltip.bind(row.name, details(row), color)} />; })}
+        {scatterRows.map((row, index) => { const color = number(row.rate_drug) > number(row.rate_bg) ? PALETTE[1] : PALETTE[0]; return <circle key={`${row.name}-${index}`} cx={sx(row.rate_bg)} cy={sy(row.rate_drug)} r={4 + Math.sqrt(number(row.reports) / maxReports) * 7} fill={color} fillOpacity=".5" stroke={color} strokeWidth="1" className="chart-point" tabIndex={0} role="graphics-symbol" {...reactionInteraction(onSelect,row.reaction,selectedReaction)} aria-label={`${row.name}, drug reports ${proportionText(row.rate_drug)} serious, background reports ${proportionText(row.rate_bg)} serious, ${fmt(row.reports)} reports`} {...tooltip.bind(row.name, details(row), color)} />; })}
       </svg>
       <Legend items={[{ label: 'Drug proportion above background', color: PALETTE[1] }, { label: 'Drug proportion at / below background', color: PALETTE[0] }]} note={`${scatterRows.length} reactions · point size = reports`} />
       {rows.length > scatterRows.length && <p className="chart-method-note">{rows.length - scatterRows.length} reactions lack valid proportions for one or both groups and are omitted from this view.</p>}

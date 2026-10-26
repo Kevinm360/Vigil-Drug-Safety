@@ -1,0 +1,107 @@
+/* Working views share navigation and evidence conventions, not a landing-page layout. */
+.app-shell:not(.view-overview) .study-title{
+  min-height:124px;padding:16px 20px 32px;margin-bottom:18px;
+  border:0;border-bottom:1px solid var(--border);border-radius:0;background:none;
+}
+.app-shell:not(.view-overview) .study-title h1{font-size:36px}
+.app-shell:not(.view-overview) .study-title p{font-size:13px;margin-top:8px;max-width:60ch}
+.app-shell:not(.view-overview) .study-title .page-kicker{font-size:10px;margin-bottom:7px}
+.app-shell:not(.view-overview) .section-atmosphere>.section-icon{right:195px;top:8px;width:150px;height:100px;opacity:.7}
+.app-shell:not(.view-overview) .section-atmosphere>.section-panel-tint{opacity:.22}
+.app-shell:not(.view-overview) .section-atmosphere>.section-accent-lines{opacity:.08}
+.app-shell:not(.view-overview) .section-motion-control{bottom:6px;padding:5px 8px}
+.app-shell:not(.view-overview) .section-bottom-wash{height:5px;opacity:.2}
+.app-shell:not(.view-overview) .panel{
+  border:0;border-top:1px solid var(--border);border-radius:0;
+  padding:20px 0 14px;background:none;box-shadow:none;
+}
+.app-shell:not(.view-overview) .panel.brief-panel{padding-left:0!important}
+.app-shell:not(.view-overview) .panel-heading{margin-bottom:18px}
+.app-shell:not(.view-overview) .panel-heading h2{font-size:25px;letter-spacing:-.5px}
+.app-shell:not(.view-overview) .section-request-status{border:0;border-left:2px solid #b8c9c0;background:none;padding:5px 10px;margin-bottom:18px}
+.app-shell:not(.view-overview) .investigation-bar{background:none;border-inline:0;border-radius:0;padding:10px 0;margin-block:8px}
+.app-shell:not(.view-overview) .investigation-bar strong{font-family:Arial,sans-serif;font-size:14px;font-weight:500}
+.app-shell:not(.view-overview) .investigation-bar .eyebrow{font-size:9px;margin-bottom:3px}
+.app-shell:not(.view-overview) .reaction-focus{margin-bottom:18px}
+.app-shell .cohort-context{min-width:0;border:0;padding:0}
+.app-shell .cohort-context.is-disclosure{border-block:1px solid var(--border);margin-bottom:4px}
+.app-shell .cohort-context>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  list-style:none;padding:12px 0;cursor:pointer;font-size:12px;color:var(--muted);
+}
+.app-shell .cohort-context>summary::-webkit-details-marker{display:none}
+.app-shell .cohort-context>summary>span:first-child{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}
+.app-shell .cohort-context>summary strong{font-weight:500;font-size:14px;color:var(--ink)}
+.app-shell .context-action{display:flex;align-items:center;gap:6px;color:var(--mint);flex-shrink:0}
+.app-shell .cohort-context[open] .context-action svg{transform:rotate(180deg)}
+.app-shell .cohort-context[open] .filterbar{margin-top:4px}
+.app-shell .cohort-context .source-line{margin-bottom:8px}
+.app-shell .cohort-context .data-request-status{margin-bottom:8px}
+.app-shell .cohort-context>summary:hover .context-action{text-decoration:underline;text-underline-offset:4px}
+.app-shell :is(.view-models,.view-narratives){min-width:0}
+.app-shell .model-setup.panel,.app-shell .narrative-editor.panel{
+  border:1px solid var(--border);border-radius:6px;background:var(--surface);padding:22px 24px;
+}
+.app-shell .model-setup .model-intro{display:grid;grid-template-columns:185px auto;justify-content:start;gap:24px;align-items:center;padding:0;background:none;border:0;margin:16px 0}
+.app-shell .model-setup .model-icon{display:none}
+.app-shell .model-setup .model-intro>div{grid-column:1/-1;max-width:65ch}
+.app-shell .model-setup .model-intro>.btn{align-self:end}
+.app-shell .model-setup .model-intro h3{font:500 16px/1.4 Arial,sans-serif;letter-spacing:0;margin-bottom:7px}
+.app-shell .model-setup .model-intro p{font-size:13px;line-height:1.7}
+.app-shell .model-setup .sample-size{display:flex;flex-direction:column;align-items:stretch;gap:8px;font-size:12px}
+.app-shell .model-setup .sample-size select{padding:9px 12px;border:1px solid #aab9b1;border-radius:4px;background:var(--surface)}
+.app-shell .task-feedback{border-left:2px solid #94b6ab;padding:9px 12px;background:#e1ece850;color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 10px}
+.app-shell .lab-cohort-status{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;line-height:1.7;margin:0 0 16px}
+.app-shell .model-methodology{border-top:1px solid var(--border);margin-top:20px}
+.app-shell .model-methodology>.two-col>.panel{border:0}
+.app-shell .model-methodology .feature-list{font-size:13px;line-height:1.7}
+.app-shell .narrative-layout{grid-template-columns:minmax(0,1.4fr) minmax(330px,1fr);gap:30px;align-items:start}
+.app-shell .narrative-layout textarea{font-size:14px;min-height:270px;max-width:65ch;line-height:1.75;padding:14px;resize:vertical}
+.app-shell .narrative-editor .narrative-actions{justify-content:flex-start;gap:12px;margin-top:16px}
+
+.app-shell .editor-meta{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:14px;max-width:65ch;color:var(--muted);margin:9px 0}
+.app-shell .editor-meta>span{font-size:11px}
+.app-shell .narrative-source-tools{min-width:0}
+.app-shell .narrative-source-tools .method-item{margin:14px 0;gap:12px}
+.app-shell .narrative-source-tools .method-item h3{font:500 14px/1.5 Arial,sans-serif;letter-spacing:0}
+.app-shell .narrative-source-tools .method-item p{font-size:12px;line-height:1.7}
+.app-shell .narrative-source-tools .method-item>span{font-size:15px;width:22px}
+.app-shell .narrative-source-tools .device-narrative-panel{padding:18px 0 0;border-radius:0}
+.app-shell .narrative-source-tools .device-source-note{padding:10px;gap:8px;margin-bottom:14px}
+.app-shell .narrative-source-tools .device-source-note p{font-size:12px;line-height:1.7}
+.app-shell .narrative-source-tools .device-fetch-fields{grid-template-columns:minmax(0,1fr) 140px;gap:14px}
+.app-shell .narrative-source-tools .device-fetch-submit{grid-column:1/-1;justify-self:start}
+.app-shell .narrative-source-tools .device-fetch-dates{font-size:11px}
+.app-shell .results-heading{border-top:1px solid var(--border);padding:22px 0 4px;margin-top:28px}
+.app-shell .results-heading h2{font-size:28px;font-weight:400}
+.app-shell .results-heading p{font-size:12px;color:var(--muted);line-height:1.7;margin-top:7px;max-width:65ch}
+.app-shell .data-table th[aria-sort]:not([aria-sort=none]){color:var(--mint)}
+.app-shell .field-hint{line-height:1.7}
+.app-shell.has-evidence .narrative-layout{grid-template-columns:1fr}
+.app-shell.has-evidence .model-setup .model-intro{grid-template-columns:1fr}
+@media(max-width:1100px){
+  .app-shell .narrative-layout{grid-template-columns:1fr}
+  .app-shell .narrative-source-tools{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .app-shell .model-setup .model-intro{grid-template-columns:1fr 180px}
+  .app-shell .model-setup .model-intro>.btn{grid-column:1/-1;justify-self:start;margin-left:0}
+  .app-shell:not(.view-overview) .section-atmosphere>.section-icon{right:160px;width:130px}
+}
+@media(max-width:700px){
+  .app-shell:not(.view-overview) .study-title{padding:15px 0 33px;min-height:138px}
+  .app-shell:not(.view-overview) .study-title h1{font-size:30px}
+  .app-shell:not(.view-overview) .study-title p{font-size:12px;max-width:36ch}
+  .app-shell:not(.view-overview) .section-atmosphere>.section-icon{right:0;top:4px;width:95px;height:80px;opacity:.25}
+  .app-shell .cohort-context>summary{align-items:flex-start;flex-direction:column;gap:10px}
+  .app-shell .cohort-context>summary>span:first-child{gap:8px 14px;font-size:11px}
+  .app-shell .cohort-context .context-action{font-size:12px}
+  .app-shell .narrative-source-tools{display:block}
+  .app-shell .narrative-source-tools .device-fetch-fields{grid-template-columns:1fr}
+  .app-shell .model-setup.panel,.app-shell .narrative-editor.panel{padding:18px 16px}
+  .app-shell .model-setup .model-intro{grid-template-columns:1fr;gap:16px}
+  .app-shell .model-setup .model-intro>div{min-width:0}
+  .app-shell .narrative-layout textarea{max-width:100%;min-height:240px}
+  .app-shell .model-setup .sample-size{width:100%}
+  .app-shell .narrative-source-tools .device-fetch-submit{grid-column:auto}
+}
+
+.public-demo-notice{padding:14px 20px;border-bottom:1px solid #cdd8d5;background:#e8efec;color:#294b46;font:14px/1.6 Arial,sans-serif}.public-demo-notice p{margin:4px 0 0;max-width:85ch}

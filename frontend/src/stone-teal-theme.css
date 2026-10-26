@@ -1,0 +1,133 @@
+/* Warm neutral surfaces; teal is reserved for actions and active evidence. */
+:root{
+  --bg:#f2f1ec;--surface:#faf9f5;--muted:#59655f;
+  --mint:#326b65;--cyan:#548c84;--purple:#8a7fa8;--border:#d8ddd6;
+  --ink:#29332f;--soft-surface:#eaece6;--selected-surface:#e1ece8;
+  background:var(--bg);color:var(--ink);
+}
+body,.app-shell{background:var(--bg);color:var(--ink)}
+::selection{background:#c8dfd8;color:var(--ink)}
+.app-shell h1,.app-shell h2,.app-shell h3,.app-shell .brand,
+.app-shell .brand-mark,.app-shell .stat-number{color:var(--ink)}
+.app-shell .page-title p,.app-shell .page-kicker,.app-shell .breadcrumbs,
+.app-shell .private-label,.app-shell .nav-item,.app-shell .stat-top,
+.app-shell .stat-card p,.app-shell .panel-heading p,.app-shell .brief-item p,
+.app-shell .filter-label,.app-shell .source-line,.app-shell .source-description,
+.app-shell .investigation-bar .eyebrow,.app-shell .investigation-bar small,
+.app-shell .reaction-focus label,.app-shell .reaction-focus p,
+.app-shell .chart-foot,.app-shell .chart-legend,.app-shell .chart-legend small,
+.app-shell .horizontal-bar-label,.app-shell .horizontal-bar-row b,
+.app-shell .bar-column-head,.app-shell .chart-method-note,
+.app-shell .form-field,.app-shell .checkbox,.app-shell .cohort-fields legend,
+.app-shell .page-footer,.app-shell .page-footer button{color:var(--muted)}
+.app-shell .nav-item.active,.app-shell .nav-item:hover,
+.app-shell .reaction-focus nav button,.app-shell .section-view-link svg{color:var(--mint)}
+.app-shell .nav-item.active:after{background:var(--mint)}
+.app-shell .btn{color:var(--ink);border-color:var(--border)}
+.app-shell .btn:hover:not(:disabled){background:var(--soft-surface);border-color:#aebcb5}
+.app-shell .btn.primary,.app-shell .hero .text-link{
+  background:var(--mint);border-color:var(--mint);color:#faf9f5;
+}
+.app-shell .btn.primary:hover:not(:disabled),.app-shell .hero .text-link:hover{background:#285953;color:#faf9f5}
+.app-shell .filterbar,.app-shell .investigation-bar{background:var(--soft-surface);border-color:var(--border)}
+.app-shell .investigation-bar strong,.app-shell .drug-combobox input,
+.app-shell .source-select select,.app-shell .filter-period>span:last-child{color:var(--ink)}
+.app-shell .investigation-bar svg{color:var(--mint)}
+.app-shell .reaction-focus select,.app-shell textarea,.app-shell .form-field input,
+.app-shell .form-field select,.app-shell .model-controls select,
+.app-shell .inline-control select,.app-shell .chart-density-label select{
+  background:var(--surface);color:var(--ink);border-color:var(--border);
+}
+.app-shell .section-view-link{color:var(--muted)}
+.app-shell .section-view-link.is-current,.app-shell .section-view-link:hover,
+.app-shell .reaction-focus .evidence-trigger,.app-shell .brief-action{
+  background:var(--selected-surface);color:var(--mint);border-color:#bed1c9;
+}
+.app-shell .section-view-link.is-current svg{color:var(--mint)}
+.app-shell .chart-segmented,.app-shell .segments{background:var(--soft-surface);border-color:var(--border)}
+.app-shell .chart-segmented button,.app-shell .segments button{color:var(--muted)}
+.app-shell .chart-segmented button.is-active,.app-shell .segments button.selected{background:var(--mint);color:var(--surface)}
+.app-shell .horizontal-bar-track{background:#e1e5df}
+.app-shell .horizontal-bar-row:hover,.app-shell .horizontal-bar-row:focus-visible,
+.app-shell .horizontal-bar-row[aria-pressed=true]{background:var(--selected-surface)}
+.app-shell .horizontal-bar-row[aria-pressed=true]{box-shadow:inset 3px 0 var(--mint)}
+.app-shell .horizontal-bar-comparison{background:var(--purple)}
+.app-shell .table-search,.app-shell .table-search input{color:var(--ink);border-color:var(--border)}
+.app-shell th{background:var(--soft-surface);color:var(--muted)}
+.app-shell td{color:var(--ink);border-color:var(--border)}
+.app-shell .data-table .table-scroll{border-color:var(--border)}
+.app-shell .modal,.app-shell .chart-tooltip,.app-shell .drug-suggestions{
+  background:var(--surface);color:var(--ink);border-color:var(--border);
+}
+.app-shell .drug-suggestions-heading,.app-shell .drug-suggestions-footer{background:var(--soft-surface);color:var(--muted)}
+.app-shell .drug-suggestion{color:var(--ink);border-color:var(--border)}
+.app-shell .drug-suggestion small,.app-shell .drug-suggestions-heading>small,
+.app-shell .drug-suggestions-footer small,.app-shell .drug-suggestions-status{color:var(--muted)}
+.app-shell .drug-suggestion:hover,.app-shell .drug-suggestion.is-active{background:var(--selected-surface)}
+.app-shell .drug-suggestion.is-active strong,.app-shell .drug-suggestion svg{color:var(--mint)}
+.app-shell .hero-copy:before{background:radial-gradient(ellipse,#f2f1ec 47%,#f2f1ece8 65%,#f2f1ec00 77%)}
+.app-shell .hero p,.app-shell .hero .eyebrow{color:var(--muted)}
+.app-shell .field-motion{background:#faf9f5e8;color:var(--muted)}
+.app-shell .evidence-drawer{background:var(--surface);color:var(--ink);border-color:var(--border)}
+.app-shell .evidence-heading,.app-shell .evidence-footer,.app-shell .evidence-metrics>div{
+  background:var(--soft-surface);border-color:var(--border);
+}
+.app-shell .evidence-caption,.app-shell .evidence-cohort,.app-shell .evidence-heading p,
+.app-shell .evidence-ratios small,.app-shell .evidence-metrics dt{color:var(--muted)}
+.app-shell .evidence-metrics dd,.app-shell .evidence-text-link{color:var(--mint)}
+.app-shell .section-request-status:not(.has-error){background:var(--surface);border-color:var(--border);color:var(--muted)}
+.app-shell .section-request-status small,.app-shell .data-request-status,
+.app-shell .data-request-status summary small{color:var(--muted);border-color:var(--border)}
+.app-shell .section-retry,.app-shell .reaction-link{color:var(--mint)}
+.app-shell .chart-tooltip strong,.app-shell .chart-tooltip>div>span{color:var(--ink)}
+.app-shell .narrative-layout>section:first-child,.app-shell .device-narrative-panel,
+.app-shell .model-intro{background:var(--surface);border-color:var(--border)}
+.app-shell .narrative-layout textarea{background:var(--surface);border-color:var(--border);box-shadow:inset 3px 0 #94b6ab}
+.app-shell .narrative-layout .method-item p,.app-shell .model-intro p{color:var(--muted)}
+.app-shell .narrative-layout .method-item>span,.app-shell .model-intro .model-icon{color:var(--mint)}
+@media(max-width:600px){
+  .app-shell .hero-copy:before{background:radial-gradient(ellipse,#f2f1ec 46%,#f2f1ecdd 65%,#f2f1ec00 79%)}
+}
+
+/* Quiet data surfaces; floating elements carry the strongest depth cue. */
+.app-shell .panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:22px 20px 16px;min-width:0;
+}
+.app-shell .panel.brief-panel{padding-left:20px!important}
+.app-shell .stats-grid{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+}
+.app-shell .stat-card:first-child{padding-left:25px}
+.app-shell .filterbar,.app-shell .investigation-bar,
+.app-shell .narrative-layout>section:first-child,.app-shell .device-narrative-panel,
+.app-shell .model-intro{border-radius:8px}
+.app-shell .drug-suggestions,.app-shell .chart-tooltip{
+  border-radius:7px;box-shadow:0 4px 10px #29332f08,0 14px 32px #29332f14;
+}
+.app-shell .modal{border-radius:10px;box-shadow:0 8px 24px #29332f12,0 28px 72px #29332f24}
+.app-shell .evidence-drawer{box-shadow:-6px 0 18px #29332f08,-18px 0 44px #29332f10}
+.app-shell .drug-combobox-control,.app-shell .form-field .drug-combobox-control,
+.app-shell .reaction-focus select,.app-shell .form-field input,
+.app-shell .form-field select,.app-shell .source-select select,
+.app-shell .narrative-layout textarea{
+  border:1px solid #aab9b1;border-radius:6px;background:var(--surface);
+}
+.app-shell .drug-combobox-control{padding:5px 9px;min-height:36px}
+.app-shell .source-select select{padding:7px 9px}
+.app-shell .drug-combobox-control:focus-within,
+.app-shell .form-field input:focus-visible,.app-shell .form-field select:focus-visible,
+.app-shell .reaction-focus select:focus-visible,.app-shell textarea:focus-visible{
+  border-color:var(--mint);box-shadow:0 0 0 3px #326b6518;
+}
+.app-shell .horizontal-bar-row{border-radius:5px}
+.app-shell .horizontal-bar-row:hover,.app-shell .horizontal-bar-row:focus-visible,
+.app-shell .data-table tbody tr:hover td{background:var(--selected-surface)}
+.app-shell .btn.ghost:hover:not(:disabled){background:#dce6e0;border-color:#9db6aa}
+.app-shell .reaction-link:hover{text-decoration-color:var(--mint);text-decoration-thickness:2px}
+@media(max-width:600px){
+  .app-shell .panel{padding:18px 16px 14px}
+  .app-shell .panel.brief-panel{padding-left:16px!important}
+  .app-shell .drug-combobox-control{padding:4px 6px}
+  .app-shell .source-select select{max-width:100%}
+}
