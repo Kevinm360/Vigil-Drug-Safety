@@ -39,8 +39,8 @@ The project started in Streamlit and grew into a React app covering data retriev
 
 <table>
   <tr>
-    <td width="50%"><a href="docs/assets/evidence-drawer-4k.png"><img src="docs/assets/evidence-drawer-4k.png" alt="Reaction frequency chart with the evidence drawer showing counts and uncertainty" width="100%" /></a></td>
-    <td width="50%"><a href="docs/assets/signal-landscape-4k.png"><img src="docs/assets/signal-landscape-4k.png" alt="Interactive 3D signal plot with labeled axes and the underlying evidence table" width="100%" /></a></td>
+    <td width="50%"><a href="docs/preview-evidence-drawer.png"><img src="docs/preview-evidence-drawer.png" alt="Reaction frequency chart with the evidence drawer showing counts and uncertainty" width="100%" /></a></td>
+    <td width="50%"><a href="docs/preview-3d-signal-axes.png"><img src="docs/preview-3d-signal-axes.png" alt="Interactive 3D signal plot with labeled axes and the underlying evidence table" width="100%" /></a></td>
   </tr>
   <tr>
     <td align="center"><sub>Follow a reaction into its evidence.</sub></td>
@@ -105,19 +105,6 @@ The project has also been deployed on **AWS EC2 with Docker and Caddy HTTPS**. T
 | Analysis | scikit-learn, XGBoost, inspectable NLP rules |
 | Storage | SQLite locally; PostgreSQL / Neon when hosted |
 | Deployment | Docker, Render; AWS EC2 deployment documented |
-
-The repository is grouped by purpose:
-
-```text
-frontend/   React interface and visualizations
-backend/    Python API, statistics, and prediction models
-config/     Build configuration and Python dependency lists
-scripts/    Local launchers, backups, and deployment helpers
-data/       Sample data and preserved database artifact
-legacy/     Original Streamlit app, pipeline, alerts, and source snapshot
-docs/       Walkthroughs, screenshots, and deployment notes
-tests/      Frontend and backend regression checks
-```
 
 The original Streamlit app and Prefect/MLflow pipeline are preserved. See the [technical guide](docs/PROJECT-GUIDE.md), [restoration notes](docs/RESTORATION.md), and [verification notes](docs/RELEASE-v1.md).
 
