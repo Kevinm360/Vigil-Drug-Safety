@@ -34,3 +34,11 @@ Checked on 2026-10-25:
 These are bounded checks, not a guarantee that every possible bug is absent. No personal investigations were edited or deleted, and no deployment or push was performed.
 
 [Model studio](preview-task-models.png) · [Narrative lab](preview-task-narratives.png) · [Mobile Model studio](preview-task-mobile.png)
+
+## Direct-load startup correction
+
+A user report exposed a startup path missed by the tab-switch checks: Model studio rendered its audit before cohort data arrived, accessing `data.model` when `data` was null. The audit fallback now handles absent cohort data.
+
+A regression test renders the real App component before effects or network requests run, across all nine bookmarked views. It reproduced the exact null-model exception before the correction and passed afterward. The entry point exports App for this test and skips browser mounting during Vite SSR transformation only; production mounting is unchanged.
+
+All 39 frontend tests and the production build passed. A new browser tab opening `#models` directly displayed the training setup and audit without a captured console error. [Corrected setup preview](preview-models-startup-fixed.png).
