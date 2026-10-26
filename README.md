@@ -12,6 +12,10 @@ The interface uses warm paper tones, editorial serif headings, thin rules, and a
 
 ![Vigil editorial dashboard preview](docs/preview-editorial-overview.png)
 
+The desktop workspace expands with the screen, up to 2,800 pixels on a 4K display. Larger labels and controls keep the research tools readable. On wide screens the overview metrics sit beside a shorter hero; smaller screens stack them above the cohort controls. Opening the evidence drawer reflows the charts to fit the remaining space.
+
+[4K layout preview](docs/preview-wide-overview.png) · [Mobile layout preview](docs/preview-mobile-overview.png)
+
 The reaction network is an aligned relationship map with a count matrix, reaction search, source highlighting, sorting, density controls, and separate per-drug counts on selection. It starts with **Live openFDA / FAERS**. Set a drug and date range, then press **Apply**. The supplied synthetic archive remains available as an explicit alternative for offline interface exploration.
 
 ## Run

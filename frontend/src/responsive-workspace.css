@@ -1,0 +1,127 @@
+/* Shared width for navigation and evidence. Long-form text keeps its own measure. */
+.overview-intro{min-width:0}
+.overview-intro>.stats-grid{margin-bottom:26px}
+
+@media(min-width:1200px){
+  .app-shell{
+    --workspace-gutter:clamp(32px,3vw,96px);
+    --workspace-max:clamp(1680px,84vw,2800px);
+  }
+  .app-shell .sidebar,.app-shell .topbar,.app-shell main{
+    width:min(calc(100% - 2 * var(--workspace-gutter)),var(--workspace-max));
+    max-width:none;
+    margin-inline:auto;
+    padding-inline:0;
+  }
+  .app-shell .sidebar{padding-top:24px;gap:18px}
+  .app-shell .topbar{height:44px}
+  .app-shell main{padding-top:22px}
+  .app-shell .breadcrumbs,.app-shell .private-label{font-size:12px}
+  .app-shell .sidebar-bottom>.nav-item{font-size:13px}
+  .app-shell .primary-navigation{gap:clamp(40px,4vw,76px)}
+  .app-shell .primary-navigation .nav-item{font-size:15px;min-height:52px}
+  .app-shell .primary-navigation .nav-item svg{width:18px;height:18px}
+  .app-shell .section-view-link{font-size:13px;min-height:39px;padding:9px 16px}
+
+  .app-shell .page-title{margin-bottom:22px}
+  .app-shell h1{font-size:clamp(40px,2.3vw,54px)}
+  .app-shell .page-kicker{font-size:11px;margin-bottom:10px}
+  .app-shell .page-title p{font-size:15px;max-width:68ch;margin-top:10px}
+  .app-shell .btn{font-size:14px;min-height:41px;padding:10px 17px}
+  .app-shell .btn.small{font-size:12px;min-height:34px;padding:7px 12px}
+  .app-shell .icon-btn{width:34px;height:34px}
+
+  .app-shell .hero{
+    min-height:310px;
+    padding:30px clamp(30px,3vw,60px);
+    margin:0 0 22px;
+  }
+  .app-shell .hero-copy{max-width:540px}
+  .app-shell .hero .eyebrow{font-size:12px;margin-bottom:14px}
+  .app-shell .hero h2{font-size:clamp(40px,2.5vw,54px);line-height:1.08}
+  .app-shell .hero p{font-size:15px;max-width:46ch;margin-top:16px;line-height:1.65}
+  .app-shell .hero .text-link{font-size:13px;min-height:41px;margin-top:20px;padding:11px 18px}
+  .app-shell .hero-index{font-size:10px;right:28px;top:20px}
+  .app-shell .field-motion{font-size:11px;padding:9px 13px}
+  .app-shell .overview-intro>.stats-grid{margin-bottom:22px}
+  .app-shell .stat-card{padding:21px 25px}
+  .app-shell .stat-top{font-size:13px}
+  .app-shell .stat-number{font-size:clamp(38px,2.1vw,49px);margin-top:16px}
+  .app-shell .stat-card p{font-size:12px;line-height:1.6;margin-top:10px}
+
+  .app-shell .filterbar{padding:16px 20px;gap:20px}
+  .app-shell .filter-label{font-size:11px;margin-bottom:8px}
+  .app-shell .drug-select .drug-combobox input{font-size:15px}
+  .app-shell .source-select select{font-size:14px;max-width:210px}
+  .app-shell .filter-period>span:last-child{font-size:14px}
+  .app-shell .drug-suggestion strong{font-size:14px}
+  .app-shell .drug-suggestion small,.app-shell .drug-suggestions-heading{font-size:11px}
+  .app-shell .source-line{font-size:12px;margin:10px 0 18px}
+  .app-shell .source-description{font-size:11px}
+  .app-shell .data-request-status{font-size:12px;margin-bottom:16px}
+  .app-shell .data-request-status summary small{font-size:11px}
+  .app-shell .investigation-bar{padding:16px 20px;margin-bottom:16px}
+  .app-shell .investigation-bar .eyebrow{font-size:10px}
+  .app-shell .investigation-bar strong{font-size:23px}
+  .app-shell .investigation-bar small,.app-shell .investigation-notice{font-size:12px}
+  .app-shell .reaction-focus{gap:12px;padding:10px 0 16px;margin-bottom:20px}
+  .app-shell .reaction-focus label{font-size:11px}
+  .app-shell .reaction-focus select{font-size:14px;padding:10px 13px;max-width:360px}
+  .app-shell .reaction-focus p,.app-shell .reaction-focus nav button{font-size:12px}
+
+  .app-shell .overview-grid{grid-template-columns:minmax(0,1.8fr) minmax(330px,1fr);gap:32px}
+  .app-shell .panel-heading h2{font-size:clamp(25px,1.5vw,32px)}
+  .app-shell .panel-heading p{font-size:14px;max-width:68ch}
+  .app-shell .brief-item h3{font-size:15px}
+  .app-shell .brief-item p{font-size:14px;max-width:62ch}
+  .app-shell .brief-source,.app-shell .brief-disclaimer{font-size:11px}
+  .app-shell .chart-legend,.app-shell .chart-legend small,.app-shell .chart-method-note{font-size:12px}
+  .app-shell .chart-foot,.app-shell .chart-text-button{font-size:12px}
+  .app-shell .horizontal-bar-label,.app-shell .horizontal-bar-row b{font-size:14px}
+  .app-shell .bar-column-head{font-size:11px}
+  .app-shell .chart-segmented button,.app-shell .segments button{font-size:13px;padding:8px 14px}
+  .app-shell table,.app-shell td{font-size:14px}
+  .app-shell th button{font-size:12px}
+  .app-shell .table-search input{font-size:14px;width:210px}
+  .app-shell .table-tools>.muted,.app-shell .pagination{font-size:12px}
+  .app-shell .section-toolbar,.app-shell .inline-control{font-size:14px}
+  .app-shell .callout p,.app-shell .report-focus-note{font-size:14px}
+  .app-shell .tag{font-size:11px}
+  .app-shell .section-request-status,.app-shell .section-request-status small,.app-shell .section-retry{font-size:12px}
+  .app-shell .relationship-search input{font-size:14px}
+  .app-shell .relationship-filters>label:not(:first-child),.app-shell .relationship-filters select{font-size:12px}
+  .app-shell .relationship-total{font-size:14px}
+  .app-shell .relationship-key,.app-shell .relationship-key small{font-size:12px}
+  .app-shell .relationship-matrix th{font-size:12px}
+  .app-shell .relationship-matrix td button{font-size:14px}
+  .app-shell .relationship-map{max-width:1500px}
+  .app-shell .model-intro p,.app-shell .method-item p{font-size:14px;max-width:68ch}
+  .app-shell .field-hint{font-size:12px}
+  .app-shell .page-footer,.app-shell .page-footer button{font-size:11px}
+  /* A drawer reduces usable workspace width even on a large monitor. */
+  .app-shell.has-evidence .overview-intro{display:block}
+  .app-shell.has-evidence .overview-grid,.app-shell.has-evidence .two-col{grid-template-columns:1fr}
+  .app-shell.has-evidence .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(min-width:1800px){
+  .app-shell .overview-intro.has-metrics{
+    display:grid;
+    grid-template-columns:minmax(0,1.9fr) minmax(420px,1fr);
+    gap:clamp(24px,2vw,48px);
+    align-items:stretch;
+    margin-bottom:24px;
+  }
+  .app-shell .overview-intro.has-metrics>.hero{margin:0;min-height:330px}
+  .app-shell .overview-intro>.stats-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    margin:0;
+    align-content:stretch;
+  }
+  .app-shell .overview-intro .stat-card{padding:22px 24px;border-bottom:1px solid var(--border)}
+  .app-shell .overview-intro .stat-card:nth-child(2){border-right:0}
+  .app-shell .overview-intro .stat-card:nth-child(n+3){border-bottom:0}
+  .app-shell.has-evidence .overview-intro.has-metrics{display:block}
+  .app-shell.has-evidence .overview-intro>.hero{margin-bottom:22px}
+  .app-shell.has-evidence .overview-intro>.stats-grid{margin-bottom:24px}
+}
