@@ -103,3 +103,5 @@
   .app-shell .model-setup .sample-size{width:100%}
   .app-shell .narrative-source-tools .device-fetch-submit{grid-column:auto}
 }
+
+.public-demo-notice{padding:14px 20px;border-bottom:1px solid #cdd8d5;background:#e8efec;color:#294b46;font:14px/1.6 Arial,sans-serif}.public-demo-notice p{margin:4px 0 0;max-width:85ch}

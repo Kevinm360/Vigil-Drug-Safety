@@ -8,6 +8,9 @@ import binascii
 import hmac
 import io
 import os
+import threading
+import time
+from collections import deque
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -16,14 +19,14 @@ from .server import APIError, DashboardRoutes, DashboardService, ROOT
 
 
 class AccessPolicy:
-    def __init__(self, origin="", username="", password=""):
+    def __init__(self, origin="", username="", password="", public_demo=False):
         self.origin = origin.rstrip("/")
         self.username, self.password = username, password
         parsed = urlsplit(self.origin)
         if self.origin and (parsed.scheme != "https" or not parsed.hostname or parsed.username
                             or parsed.password or parsed.path or parsed.query or parsed.fragment):
             raise ValueError("VIGIL_PUBLIC_ORIGIN must be an HTTPS origin without a path or credentials.")
-        if self.origin and (not username or ":" in username or len(password) < 20):
+        if self.origin and not public_demo and (not username or ":" in username or len(password) < 20):
             raise ValueError("Hosted workspaces require VIGIL_AUTH_USER and VIGIL_AUTH_PASSWORD (at least 20 characters).")
         if bool(username) != bool(password):
             raise ValueError("Configure both workspace authentication variables together.")
@@ -59,13 +62,21 @@ class AccessPolicy:
 
 def create_app(settings=None, service=None):
     settings = dict(os.environ if settings is None else settings)
+    demo = settings.get("VIGIL_PUBLIC_DEMO") == "1"
+    if demo and (settings.get("VIGIL_AUTH_USER") or settings.get("VIGIL_AUTH_PASSWORD") or settings.get("VIGIL_DATABASE_URL")):
+        raise ValueError("Public demo must use separate storage and no private workspace credentials or database.")
+    if demo and not settings.get("VIGIL_PUBLIC_ORIGIN"):
+        raise ValueError("Public demo requires an explicit HTTPS origin.")
     policy = AccessPolicy(settings.get("VIGIL_PUBLIC_ORIGIN") or settings.get("RENDER_EXTERNAL_URL", ""),
-                          settings.get("VIGIL_AUTH_USER", ""), settings.get("VIGIL_AUTH_PASSWORD", ""))
+                          settings.get("VIGIL_AUTH_USER", ""), settings.get("VIGIL_AUTH_PASSWORD", ""), demo)
     storage = settings.get("VIGIL_DATA_DIR")
     database_url = settings.get("VIGIL_DATABASE_URL")
     if settings.get("VIGIL_REQUIRE_REMOTE_STORE") == "1" and not database_url:
         raise ValueError("Free hosted workspaces require VIGIL_DATABASE_URL so saves survive restarts.")
     app = Flask(__name__, static_folder=None)
+    demo_requests = deque()
+    demo_lock = threading.Lock()
+    demo_analysis = threading.BoundedSemaphore(1)
     app.config.update(MAX_CONTENT_LENGTH=2_000_000, PROPAGATE_EXCEPTIONS=False)
     app.extensions["vigil_service"] = service or DashboardService(storage_root=storage)
     app.extensions["vigil_service"].workspace_location = "hosted" if policy.origin else "local"
@@ -120,6 +131,30 @@ def create_app(settings=None, service=None):
         except APIError as error:
             handler.send_json({"status": "error", "error": str(error)}, error.status)
             return handler.response
+        if path == "api/workspace-mode" and request.method in {"GET", "HEAD"}:
+            handler.send_json({"public_demo": demo})
+            return handler.response
+        if demo:
+            if request.method not in {"GET", "HEAD"} or path.startswith("api/investigations"):
+                handler.send_json({"error": "Public demo is read-only. Saved investigations, training and narrative submissions are available in the private workspace."}, 403)
+                return handler.response
+            if path.startswith("api/"):
+                with demo_lock:
+                    now = time.monotonic()
+                    while demo_requests and demo_requests[0] <= now - 60:
+                        demo_requests.popleft()
+                    limited = len(demo_requests) >= 60
+                    if not limited:
+                        demo_requests.append(now)
+                if limited or not demo_analysis.acquire(timeout=10):
+                    handler.send_json({"error": "The public demo is busy. Please try again shortly."}, 429)
+                    handler.response.headers["Retry-After"] = "15"
+                    return handler.response
+                try:
+                    getattr(handler, "do_" + request.method)()
+                    return handler.response
+                finally:
+                    demo_analysis.release()
         handler.rfile = io.BytesIO(request.get_data(cache=False)) if request.method == "POST" else io.BytesIO()
         getattr(handler, "do_" + request.method)()
         return handler.response
