@@ -2,9 +2,9 @@
 
 A research workspace for exploring FAERS reporting patterns, tracing reaction evidence, and keeping investigation notes. Built with React and a Python API; the complete original Streamlit app is preserved.
 
-[Short demo](docs/DEMO.md) · [Free private deployment](docs/DEPLOYMENT.md) · [v1 verification](docs/RELEASE-v1.md)
+[Live read-only demo](https://vigil-drug-safety.duckdns.org) · [Short demo](docs/DEMO.md) · [Free private deployment](docs/DEPLOYMENT.md) · [v1 verification](docs/RELEASE-v1.md)
 
-Local-first, with a prepared free hosting configuration for a password-protected owner workspace. The hosted library uses PostgreSQL so saved investigations survive the free web server’s restarts; local use keeps SQLite. The cloud service has not been launched.
+Deployed on AWS EC2 with Docker and Caddy HTTPS. The public demo allows anonymous exploration without access to private investigations or submissions. The separate password-protected owner workspace stores investigations in SQLite on a persistent Docker volume. An alternative Render + PostgreSQL deployment configuration is also included. See the [public demo deployment guide](docs/PUBLIC-DEMO.md).
 
 ![Vigil investigation walkthrough](docs/demo-v1.gif)
 
