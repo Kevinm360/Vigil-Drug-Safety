@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="230" viewBox="0 0 1280 230" role="img" aria-labelledby="title desc">
+<title id="title">Vigil — a closer look at drug safety data</title>
+<desc id="desc">Vigil wordmark on a warm stone background with a teal pulse and a quiet line pattern.</desc>
+<defs><linearGradient id="fade"><stop stop-color="#326f69" stop-opacity="0"/><stop offset="1" stop-color="#326f69" stop-opacity=".12"/></linearGradient></defs>
+<rect width="1280" height="230" rx="18" fill="#f3f1eb"/>
+<path d="M43 115h18l10-27 15 57 14-40 10 10h19" fill="none" stroke="#326f69" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="149" y="139" fill="#263b3b" font-family="Georgia,serif" font-size="96" letter-spacing="-6">vigil.</text>
+<text x="49" y="193" fill="#526965" font-family="Arial,sans-serif" font-size="14" letter-spacing="2.7">A CLOSER LOOK AT DRUG SAFETY DATA</text>
+<g fill="none" stroke="#326f69" stroke-opacity=".12"><path d="M762 35V185"/><path d="M778 35V185"/><path d="M794 35V185"/><path d="M810 35V185"/><path d="M826 35V185"/><path d="M842 35V185"/><path d="M858 35V185"/><path d="M874 35V185"/><path d="M890 35V185"/><path d="M906 35V185"/><path d="M922 35V185"/><path d="M938 35V185"/><path d="M954 35V185"/><path d="M970 35V185"/><path d="M986 35V185"/><path d="M1002 35V185"/><path d="M1018 35V185"/><path d="M1034 35V185"/><path d="M1050 35V185"/><path d="M1066 35V185"/><path d="M1082 35V185"/><path d="M1098 35V185"/><path d="M1114 35V185"/><path d="M1130 35V185"/><path d="M1146 35V185"/><path d="M1162 35V185"/><path d="M1178 35V185"/><path d="M1194 35V185"/><path d="M1210 35V185"/><path d="M1226 35V185"/></g>
+<path d="M762 130h53l17-9 17 17 25-46 21 71 21-39 18 6h34l19-13 18 15 15-5h32l23-15 21 33 21-21h93" fill="none" stroke="#326f69" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="730" y="184" width="500" height="2" fill="url(#fade)"/>
+</svg>
