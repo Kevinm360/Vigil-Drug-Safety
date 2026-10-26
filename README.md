@@ -21,7 +21,11 @@
 
 ### Pick a drug. Follow the evidence.
 
-Vigil brings live **openFDA / FAERS** data into one research workspace. Search a drug, compare reporting patterns, then follow a reaction from its chart to the supporting reports.
+Vigil brings live **openFDA / FAERS** data into one research workspace. FAERS is the [FDA Adverse Event Reporting System](https://open.fda.gov/apis/drug/event/): reports of adverse events and medication errors submitted to the FDA.
+
+The idea is to make a question like *“Why does this reaction stand out?”* easier to follow. Search a drug, choose a cohort, compare reporting patterns, and trace a reaction from its chart to the supporting reports. Save your notes alongside the filters so tomorrow-you can pick up the thread.
+
+The project started in Streamlit and grew into a React app covering data retrieval, statistical screening, model evaluation, and deployment. The original app and pipeline are still included.
 
 | What you want to do | Where Vigil helps |
 | --- | --- |
@@ -43,6 +47,14 @@ Vigil brings live **openFDA / FAERS** data into one research workspace. Search a
     <td align="center"><sub>Explore signals from another angle. Literally.</sub></td>
   </tr>
 </table>
+
+### How the analysis works
+
+- **Signals come with context.** PRR and ROR compare reaction reporting with and without the selected drug. Report counts and confidence intervals stay visible so you can judge the strength and uncertainty of a pattern.
+- **Models get a proper check.** Logistic Regression and XGBoost classify reported seriousness using the same held-out records. Full and reduced feature sets help examine how administrative details might influence predictions.
+- **Text analysis stays inspectable.** TF-IDF keywords, phrase rules, and limited negation handling make it possible to see how narrative results were produced.
+
+The engineering side includes cached FDA requests, separate visitor libraries, revision tracking, and Docker deployment. **Render + Neon** power the public app; the project also has a separate **AWS EC2 + Caddy HTTPS** deployment.
 
 ### Run it yourself
 
