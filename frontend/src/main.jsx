@@ -24,6 +24,7 @@ import './editorial-theme.css';
 import './research-details.css';
 import './section-motion.css';
 import './responsive-workspace.css';
+import './stone-teal-theme.css';
 
 const NAV = [ ['overview','Overview',LayoutDashboard], ['reactions','Reactions',ChartNoAxesCombined], ['reports','Case reports',FileText], ['signals','Signal explorer',ScanLine], ['changes','What changed?',ArrowLeftRight], ['severity','Severity',HeartPulse], ['network','Network graph',Network], ['narratives','Narrative lab',BrainCircuit], ['models','Model studio',FlaskConical] ];
 const INITIAL = DEFAULT_COHORT;

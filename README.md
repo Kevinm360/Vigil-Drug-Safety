@@ -8,7 +8,7 @@ Local-first, with a prepared free hosting configuration for a password-protected
 
 ![Vigil investigation walkthrough](docs/demo-v1.gif)
 
-The interface uses warm paper tones, editorial serif headings, thin rules, and an animated vertical line field inspired by AfterQuery. The animation uses original medical and data symbols, with a pause control and a static reduced-motion version. Every research tab also has an animated striped icon and a bottom color wash matched to its accent. Decorative motion pauses offscreen and when the tab is hidden. Charts use restrained, flat colors so the evidence remains readable.
+The interface uses warm stone backgrounds, ivory surfaces, charcoal text, muted teal controls, editorial serif headings, thin rules, and an animated vertical line field inspired by AfterQuery. The animation uses original medical and data symbols, with a pause control and a static reduced-motion version. Every research tab also has an animated striped icon and a bottom color wash matched to its accent. Decorative motion pauses offscreen and when the tab is hidden. Charts use restrained, flat colors so the evidence remains readable.
 
 ![Vigil editorial dashboard preview](docs/preview-editorial-overview.png)
 

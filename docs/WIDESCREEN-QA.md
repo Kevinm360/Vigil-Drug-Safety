@@ -22,3 +22,14 @@ The following CSS-only refinement was also checked on 2026-10-25:
 - Production build passed. No data, API, or interaction logic changed.
 
 [Refined overview preview](preview-refined-overview.png)
+
+
+## Warm stone and teal palette
+
+- Shared neutral surfaces, charcoal/slate text, and teal actions applied across navigation, filters, tables, dialogs, evidence drawer, and lab panels. Animated artwork and tab accent colors remain intact.
+- Chart series use muted teal, lavender, and terracotta; no calculations or interactions changed.
+- Contrast ratios: main text/page 11.54:1; secondary text/page 5.38:1; secondary text/control surface 5.11:1; primary button text/background 5.82:1. These are the specified color pairs, not a full accessibility audit.
+- Visually inspected Overview, Explore, Reports, and Narrative lab on desktop, plus Overview at 390 × 844. No mobile page overflow or captured browser console errors.
+- Frontend tests: 37 passed. Final production build: passed.
+
+[Stone and teal preview](preview-stone-teal-overview.png)
