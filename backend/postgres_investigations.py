@@ -32,10 +32,20 @@ class PostgresInvestigationStore(InvestigationStore):
             raise ValueError("Hosted database connections require TLS.")
 
     def connect(self):
-        options = {"connect_timeout": 5, "options": "-c statement_timeout=5000 -c lock_timeout=5000"}
+        options = {"connect_timeout": 15}
         if not self.local:
             options["sslmode"] = parse_qs(urlsplit(self.url).query).get("sslmode", ["require"])[-1]
-        return psycopg.connect(self.url, **options)
+        conn = psycopg.connect(self.url, **options)
+        try:
+            # Neon/PgBouncer rejects these settings in startup packets. Apply
+            # them inside the transaction so pooled connections keep the limits
+            # without leaking session settings to the next client.
+            conn.execute("SET LOCAL statement_timeout = '5s'")
+            conn.execute("SET LOCAL lock_timeout = '5s'")
+        except Exception:
+            conn.close()
+            raise
+        return conn
 
     @database_errors
     def initialize(self):

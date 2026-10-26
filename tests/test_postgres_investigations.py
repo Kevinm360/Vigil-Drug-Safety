@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import psycopg
 from backend.investigations import InvestigationError
@@ -20,6 +20,25 @@ DOCUMENT = {"name": "Isolated database contract", "notes": "Before · original n
 
 
 class HostedDatabaseConfigurationTests(unittest.TestCase):
+    def test_pooled_connection_applies_timeouts_after_connecting(self):
+        store = PostgresInvestigationStore("postgresql://owner:private@remote-pooler.example/vigil?sslmode=require", validate_params)
+        connection = MagicMock()
+        with patch("backend.postgres_investigations.psycopg.connect", return_value=connection) as connect:
+            self.assertIs(store.connect(), connection)
+        self.assertNotIn("options", connect.call_args.kwargs)
+        self.assertEqual(connect.call_args.kwargs["sslmode"], "require")
+        self.assertEqual(connection.execute.call_count, 2)
+        self.assertTrue(all(call.args[0].startswith("SET LOCAL ") for call in connection.execute.call_args_list))
+
+    def test_failed_timeout_setup_closes_connection(self):
+        store = PostgresInvestigationStore("postgresql://owner:private@remote.example/vigil", validate_params)
+        connection = MagicMock()
+        connection.execute.side_effect = psycopg.OperationalError("Connection lost")
+        with patch("backend.postgres_investigations.psycopg.connect", return_value=connection):
+            with self.assertRaises(psycopg.OperationalError):
+                store.connect()
+        connection.close.assert_called_once()
+
     def test_remote_database_requires_tls_and_does_not_expose_connection_errors(self):
         with self.assertRaises(ValueError):
             PostgresInvestigationStore("postgresql://owner:private@remote.example/vigil?sslmode=disable", validate_params)
