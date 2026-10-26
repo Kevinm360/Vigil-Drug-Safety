@@ -5,7 +5,7 @@
 @media(min-width:1200px){
   .app-shell{
     --workspace-gutter:clamp(32px,3vw,96px);
-    --workspace-max:clamp(1680px,84vw,2800px);
+    --workspace-max:2000px;
   }
   .app-shell .sidebar,.app-shell .topbar,.app-shell main{
     width:min(calc(100% - 2 * var(--workspace-gutter)),var(--workspace-max));
@@ -49,7 +49,9 @@
   .app-shell .stat-number{font-size:clamp(38px,2.1vw,49px);margin-top:16px}
   .app-shell .stat-card p{font-size:12px;line-height:1.6;margin-top:10px}
 
-  .app-shell .filterbar{padding:16px 20px;gap:20px}
+  .app-shell .filterbar{padding:16px 20px;gap:20px;justify-content:flex-start}
+  .app-shell .filterbar .drug-select{flex:0 1 360px;width:360px;max-width:360px}
+  .app-shell .filterbar .filter-period,.app-shell .filterbar .source-select,.app-shell .filterbar .filter-button{margin-left:0}
   .app-shell .filter-label{font-size:11px;margin-bottom:8px}
   .app-shell .drug-select .drug-combobox input{font-size:15px}
   .app-shell .source-select select{font-size:14px;max-width:210px}
@@ -102,26 +104,4 @@
   .app-shell.has-evidence .overview-intro{display:block}
   .app-shell.has-evidence .overview-grid,.app-shell.has-evidence .two-col{grid-template-columns:1fr}
   .app-shell.has-evidence .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-
-@media(min-width:1800px){
-  .app-shell .overview-intro.has-metrics{
-    display:grid;
-    grid-template-columns:minmax(0,1.9fr) minmax(420px,1fr);
-    gap:clamp(24px,2vw,48px);
-    align-items:stretch;
-    margin-bottom:24px;
-  }
-  .app-shell .overview-intro.has-metrics>.hero{margin:0;min-height:330px}
-  .app-shell .overview-intro>.stats-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    margin:0;
-    align-content:stretch;
-  }
-  .app-shell .overview-intro .stat-card{padding:22px 24px;border-bottom:1px solid var(--border)}
-  .app-shell .overview-intro .stat-card:nth-child(2){border-right:0}
-  .app-shell .overview-intro .stat-card:nth-child(n+3){border-bottom:0}
-  .app-shell.has-evidence .overview-intro.has-metrics{display:block}
-  .app-shell.has-evidence .overview-intro>.hero{margin-bottom:22px}
-  .app-shell.has-evidence .overview-intro>.stats-grid{margin-bottom:24px}
 }
