@@ -54,6 +54,22 @@ The project started in Streamlit and grew into a React app covering data retriev
 - **Models get a proper check.** Logistic Regression and XGBoost classify reported seriousness using the same held-out records. Full and reduced feature sets help examine how administrative details might influence predictions.
 - **Text analysis stays inspectable.** TF-IDF keywords, phrase rules, and limited negation handling make it possible to see how narrative results were produced.
 
+#### What goes into a prediction?
+
+The seriousness classifiers learn from **15 report fields** in the full model and **6** in the reduced model. Their target is whether a submitted report is labeled serious.
+
+| Input group | Fields used | Reduced model |
+| --- | --- | --- |
+| **Patient details** | Age in years, weight in kilograms, and reported sex | Kept |
+| **Report contents** | Number of drugs and number of reactions listed | Kept |
+| **Administration route** | How the selected drug was administered | Kept |
+| **Drug-role coding** | Selected drug's reported role; counts of drugs marked suspect, concomitant, or interacting | Removed |
+| **Reporting context** | Reporter qualification; reporter, primary-source, and event countries; report type | Removed |
+
+The reduced model checks how performance changes when administrative reporting details are removed. Both versions use the same held-out records for comparison.
+
+**No peeking at the answer:** death, hospitalization, other direct seriousness outcomes, and reaction outcomes are excluded from the inputs. The seriousness flag is the target only. Raw drug names and reaction terms are also excluded. The [feature definitions and audit](app/serious_outcome.py) spell out the exact fields.
+
 The engineering side includes cached FDA requests, separate visitor libraries, revision tracking, and Docker deployment. **Render + Neon** power the public app; the project also has a separate **AWS EC2 + Caddy HTTPS** deployment.
 
 ### Run it yourself
