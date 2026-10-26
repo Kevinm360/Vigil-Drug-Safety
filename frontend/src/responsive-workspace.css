@@ -2,6 +2,11 @@
 .overview-intro{min-width:0}
 .overview-intro>.stats-grid{margin-bottom:26px}
 
+/* Keep small functional labels readable without changing decorative artwork. */
+.app-shell .filter-label,.app-shell .reaction-focus label,
+.app-shell .investigation-bar .eyebrow{color:#56634d}
+.app-shell .investigation-bar small,.app-shell .reaction-focus p{color:#5d6d53}
+
 @media(min-width:1200px){
   .app-shell{
     --workspace-gutter:clamp(32px,3vw,96px);
@@ -32,15 +37,15 @@
   .app-shell .icon-btn{width:34px;height:34px}
 
   .app-shell .hero{
-    min-height:310px;
-    padding:30px clamp(30px,3vw,60px);
-    margin:0 0 22px;
+    min-height:280px;
+    padding:22px clamp(30px,3vw,60px);
+    margin:0 0 18px;
   }
   .app-shell .hero-copy{max-width:540px}
-  .app-shell .hero .eyebrow{font-size:12px;margin-bottom:14px}
-  .app-shell .hero h2{font-size:clamp(40px,2.5vw,54px);line-height:1.08}
-  .app-shell .hero p{font-size:15px;max-width:46ch;margin-top:16px;line-height:1.65}
-  .app-shell .hero .text-link{font-size:13px;min-height:41px;margin-top:20px;padding:11px 18px}
+  .app-shell .hero .eyebrow{font-size:12px;margin-bottom:10px}
+  .app-shell .hero h2{font-size:clamp(40px,2.5vw,48px);line-height:1.08}
+  .app-shell .hero p{font-size:15px;max-width:46ch;margin-top:12px;line-height:1.65}
+  .app-shell .hero .text-link{font-size:13px;min-height:41px;margin-top:14px;padding:11px 18px}
   .app-shell .hero-index{font-size:10px;right:28px;top:20px}
   .app-shell .field-motion{font-size:11px;padding:9px 13px}
   .app-shell .overview-intro>.stats-grid{margin-bottom:22px}
@@ -62,14 +67,16 @@
   .app-shell .source-description{font-size:11px}
   .app-shell .data-request-status{font-size:12px;margin-bottom:16px}
   .app-shell .data-request-status summary small{font-size:11px}
-  .app-shell .investigation-bar{padding:16px 20px;margin-bottom:16px}
-  .app-shell .investigation-bar .eyebrow{font-size:10px}
-  .app-shell .investigation-bar strong{font-size:23px}
+  .app-shell .investigation-bar{padding:12px 20px;margin-block:8px 10px;gap:14px}
+  .app-shell .investigation-bar .eyebrow{font-size:10px;margin-bottom:3px}
+  .app-shell .investigation-bar strong{font-size:21px}
+  .app-shell .investigation-bar small{margin-top:3px}
   .app-shell .investigation-bar small,.app-shell .investigation-notice{font-size:12px}
-  .app-shell .reaction-focus{gap:12px;padding:10px 0 16px;margin-bottom:20px}
+  .app-shell .reaction-focus{gap:8px 16px;padding:8px 0 12px;margin-bottom:16px}
   .app-shell .reaction-focus label{font-size:11px}
   .app-shell .reaction-focus select{font-size:14px;padding:10px 13px;max-width:360px}
   .app-shell .reaction-focus p,.app-shell .reaction-focus nav button{font-size:12px}
+  .app-shell .reaction-focus p{width:auto;flex:1 1 360px}
 
   .app-shell .overview-grid{grid-template-columns:minmax(0,1.8fr) minmax(330px,1fr);gap:32px}
   .app-shell .panel-heading h2{font-size:clamp(25px,1.5vw,32px)}

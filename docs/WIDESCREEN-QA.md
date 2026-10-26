@@ -11,3 +11,14 @@ Verified locally on 2026-10-25 using the production build and an FDA cohort.
 The earlier wider-layout pass also exercised the evidence drawer, Signals, Network, Case reports, and Narrative lab. These checks cover the listed paths and sizes, rather than guaranteeing the absence of every possible bug.
 
 [4K preview](preview-wide-overview.png) · [Mobile preview](preview-mobile-overview.png)
+
+## Spacing and contrast refinement
+
+The following CSS-only refinement was also checked on 2026-10-25:
+
+- 2560 × 1440: hero measures about 288 pixels tall, with its heading, description, action, and animation control visible. Reaction focus fits in a 59-pixel row when no reaction is selected.
+- 1440 × 900: selecting Nausea retains all five reaction actions and opens the evidence drawer; the focus area wraps without page overflow.
+- 390 × 844: the drawer can be closed and reaction focus cleared; no horizontal page overflow. Functional labels use darker sage text while decorative artwork keeps its original colors.
+- Production build passed. No data, API, or interaction logic changed.
+
+[Refined overview preview](preview-refined-overview.png)
