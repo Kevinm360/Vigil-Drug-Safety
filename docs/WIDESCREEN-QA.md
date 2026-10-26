@@ -33,3 +33,12 @@ The following CSS-only refinement was also checked on 2026-10-25:
 - Frontend tests: 37 passed. Final production build: passed.
 
 [Stone and teal preview](preview-stone-teal-overview.png)
+
+
+## Narrower reading workspace
+
+The latest approved layout caps the shared workspace at 1,600 pixels, superseding the earlier 2,000-pixel cap. Long explanatory text is limited to 65ch (or its existing shorter measure); the narrative input also has a 65ch maximum.
+
+Verified at 2560 × 1440: main width 1,600 pixels, no horizontal page overflow, report table container retains overflow-x: auto. At 390 × 844, the narrative input fits within the screen and the page has no horizontal overflow. Production build passed. Palette, feature logic, and text sizes are unchanged.
+
+[Narrower Narrative lab preview](preview-focused-narratives.png)

@@ -12,7 +12,7 @@ The interface uses warm stone backgrounds, ivory surfaces, charcoal text, muted 
 
 ![Vigil editorial dashboard preview](docs/preview-editorial-overview.png)
 
-The desktop workspace expands with the screen, up to 2,000 pixels on a 4K display. Larger labels and controls keep the research tools readable. Overview metrics sit directly above the charts, and related filter controls stay grouped together below the shorter hero. Opening the evidence drawer reflows the charts to fit the remaining space.
+The desktop workspace expands with the screen, up to 1,600 pixels on a wide display. Larger labels and controls keep the research tools readable. Overview metrics sit directly above the charts, and related filter controls stay grouped together below the shorter hero. Opening the evidence drawer reflows the charts to fit the remaining space.
 
 [4K layout preview](docs/preview-wide-overview.png) · [Mobile layout preview](docs/preview-mobile-overview.png)
 

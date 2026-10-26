@@ -1,6 +1,9 @@
 /* Shared width for navigation and evidence. Long-form text keeps its own measure. */
 .overview-intro{min-width:0}
 .overview-intro>.stats-grid{margin-bottom:26px}
+.app-shell .narrative-layout p,.app-shell .method-item p,
+.app-shell .device-narrative-panel p,.app-shell .report-focus-note{max-width:65ch}
+.app-shell .narrative-layout textarea{width:100%;max-width:65ch;line-height:1.75}
 
 /* Keep small functional labels readable without changing decorative artwork. */
 .app-shell .filter-label,.app-shell .reaction-focus label,
@@ -10,7 +13,7 @@
 @media(min-width:1200px){
   .app-shell{
     --workspace-gutter:clamp(32px,3vw,96px);
-    --workspace-max:2000px;
+    --workspace-max:1600px;
   }
   .app-shell .sidebar,.app-shell .topbar,.app-shell main{
     width:min(calc(100% - 2 * var(--workspace-gutter)),var(--workspace-max));
@@ -31,7 +34,7 @@
   .app-shell .page-title{margin-bottom:22px}
   .app-shell h1{font-size:clamp(40px,2.3vw,54px)}
   .app-shell .page-kicker{font-size:11px;margin-bottom:10px}
-  .app-shell .page-title p{font-size:15px;max-width:68ch;margin-top:10px}
+  .app-shell .page-title p{font-size:15px;max-width:65ch;margin-top:10px}
   .app-shell .btn{font-size:14px;min-height:41px;padding:10px 17px}
   .app-shell .btn.small{font-size:12px;min-height:34px;padding:7px 12px}
   .app-shell .icon-btn{width:34px;height:34px}
@@ -80,7 +83,7 @@
 
   .app-shell .overview-grid{grid-template-columns:minmax(0,1.8fr) minmax(330px,1fr);gap:32px}
   .app-shell .panel-heading h2{font-size:clamp(25px,1.5vw,32px)}
-  .app-shell .panel-heading p{font-size:14px;max-width:68ch}
+  .app-shell .panel-heading p{font-size:14px;max-width:65ch}
   .app-shell .brief-item h3{font-size:15px}
   .app-shell .brief-item p{font-size:14px;max-width:62ch}
   .app-shell .brief-source,.app-shell .brief-disclaimer{font-size:11px}
@@ -104,7 +107,7 @@
   .app-shell .relationship-matrix th{font-size:12px}
   .app-shell .relationship-matrix td button{font-size:14px}
   .app-shell .relationship-map{max-width:1500px}
-  .app-shell .model-intro p,.app-shell .method-item p{font-size:14px;max-width:68ch}
+  .app-shell .model-intro p,.app-shell .method-item p{font-size:14px;max-width:65ch}
   .app-shell .field-hint{font-size:12px}
   .app-shell .page-footer,.app-shell .page-footer button{font-size:11px}
   /* A drawer reduces usable workspace width even on a large monitor. */
